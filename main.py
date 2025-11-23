@@ -1,27 +1,104 @@
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Border,Side
+from openpyxl.utils import get_column_letter
+from docx import Document
 
 data_hoje  = datetime.now()
 
 data_formatada = data_hoje.strftime("%d/%m/%Y - %H:00")
 
 #Listas para cada uma das intenções
-honra_e_louvor = []
-aniversario = []
-aniversario_de_casamento = []
-acao_de_gracas = []
-intencoes = []
-recuperacao_de_saude = []
-setimo_dia = []
-almas = []
+categorias = {
+    "HONRA E LOUVOR": [],
+    "INTENÇÃO": [],
+    "ANIVERSÁRIO NATALÍCIO": [],
+    "RECUPERAÇÃO DE SAÚDE": [],
+    "ANIVERSÁRIO DE CASAMENTO": [],
+    "AÇÃO DE GRAÇAS": [],
+    "IRMÃOS FALECIDOS": [],
+    "7º DIA": []
+}
 
 pix = []
 
 #Variavel do dinheiro
 valor_total = 0
 
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+#FUNÇÃO DE ESCANEAR O DOCUMENTO WORD
+
+def extrair_docx():
+
+    def normalizar(txt):
+        return " ".join(txt.strip().upper().split())
+
+    arquivo = "teste.docx"
+    doc = Document(arquivo)
+
+    TITULOS = [
+        "HONRA E LOUVOR",
+        "INTENÇÃO",
+        "ANIVERSÁRIO NATALÍCIO",
+        "ANIVERSÁRIO DE CASAMENTO",
+        "RECUPERAÇÃO DE SAÚDE",
+        "AÇÃO DE GRAÇAS",
+        "IRMÃOS FALECIDOS",
+    ]
+
+    TITULOS_NORM = [normalizar(t) for t in TITULOS]
+
+    dados = {}
+    titulo_atual = None
+
+    # LER TABELAS EM VEZ DE PARÁGRAFOS
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+
+                linha = cell.text.strip()
+                if not linha:
+                    continue
+
+                ln = normalizar(linha)
+
+                if ln in TITULOS_NORM:  # detecta título
+                    titulo_atual = ln
+                    dados[titulo_atual] = []
+                    continue
+
+                if titulo_atual:
+                    
+                    if (linha != "+") and not (linha.startswith("INTENÇÕES")):
+
+                        dados[titulo_atual].append(linha)
+
+
+    return dados
+
+
+
+dados_importados = extrair_docx()
+
+
+
+for titulo, itens in dados_importados.items():
+
+    for item in itens:
+
+        # se NÃO começar com 7º, mantém na categoria original
+        if not item.startswith("7º"):
+            categorias[titulo].append(item)
+
+        # se começar com 7º, manda para a categoria 7º DIA
+        else:
+            categorias["7º DIA"].append(item)
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#FUNÇÃO DE MARCAR MISSA
 
 def menu_pessoa(valor_pessoa):
 
@@ -42,7 +119,7 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    honra_e_louvor.append(nome.title())
+                    categorias["HONRA E LOUVOR"].append(nome.title())
                     valor_pessoa += 3
 
 
@@ -53,7 +130,7 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    aniversario.append(nome.title())
+                    categorias["ANIVERSÁRIO NATALÍCIO"].append(nome.title())
                     valor_pessoa += 3
 
 
@@ -64,7 +141,7 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    aniversario_de_casamento.append(nome.title())
+                    categorias["ANIVERSÁRIO DE CASAMENTO"].append(nome.title())
                     valor_pessoa += 3
 
 
@@ -75,7 +152,7 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    acao_de_gracas.append(nome.title())
+                    categorias["AÇÃO DE GRAÇAS"].append(nome.title())
                     valor_pessoa += 3
 
 
@@ -86,7 +163,7 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    intencoes.append(nome.title())
+                    categorias["INTENÇÃO"].append(nome.title())
                     valor_pessoa += 3
 
 
@@ -98,7 +175,7 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    recuperacao_de_saude.append(nome.title())
+                    categorias["RECUPERAÇÃO DE SAÚDE"].append(nome.title())
                     valor_pessoa += 3
 
 
@@ -109,7 +186,7 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    setimo_dia.append(nome.title())
+                    categorias['7º DIA'].append(nome.title())
                     valor_pessoa += 3
 
                 case 8:#Adiciona uma intenção de Alma
@@ -119,12 +196,12 @@ def menu_pessoa(valor_pessoa):
 
                     nome = nome.lower()
 
-                    almas.append(nome.title())
+                    categorias['IRMÃOS FALECIDOS'].append(nome.title())
                     valor_pessoa += 3
 
                 case 9:
 
-
+                
                     print(f'\nO valor a ser pago é de R$ {valor_pessoa:.2f}\n')
 
                     metodo_de_pagamento = int(input('\nQual vai ser a forma de pagamento?\n1- Dinheiro\n2- Pix\n-> '))
@@ -182,7 +259,7 @@ def menu_pessoa(valor_pessoa):
 
 
 
-                    confirmacao = str(input('\nAperte qualquer tecla para continuar\n'))
+                    confirmacao = str(input('\nAperte enter para continuar\n'))
 
                     print('\nVoltando ao menu inicial...\n')
 
@@ -198,6 +275,9 @@ def menu_pessoa(valor_pessoa):
     
     return(valor_pessoa)
 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#FUNÇÃO DE IMPRIMIR NO EXCEL
 
 def imprimir():
 
@@ -206,89 +286,19 @@ def imprimir():
     ws = wb.active
     ws.title = "Intenções"
 
-#############################################################################################################
+#-------------------------------------------------------------------------------------------------------------
     ws.append([f"INTENÇÕES DA MISSA {data_formatada}"])
     ws.append([])  # linha em branco
 
-#############################################################################################################
-    # Inserir Honra e Louvor
-    ws.append(['HONRA E LOUVOR:'])
-
-    for i in range(len(honra_e_louvor)):
-
-        ws.append([honra_e_louvor[i]])
+#-------------------------------------------------------------------------------------------------------------
     
-    ws.append([])  # linha em branco
+    for titulo, lista in categorias.items():
+        ws.append([titulo + ":"])
+        for item in lista:
+            ws.append([item])
+        ws.append([])
 
-#############################################################################################################
-    # Inserir Aniversário
-    ws.append(['ANIVERSÁRIO:'])
-
-    for i in range(len(aniversario)):
-
-        ws.append([aniversario[i]])
-
-    ws.append([])  # linha em branco
-
-#############################################################################################################
-    # Inserir Aniversário de Casamento
-    ws.append(['ANIVERSÁRIO DE CASAMENTO:'])
-
-    for i in range(len(aniversario_de_casamento)):
-
-        ws.append([aniversario_de_casamento[i]])
-
-    ws.append([])  # linha em branco
-
-#############################################################################################################
-    # Inserir Ação de Graças
-    ws.append(['AÇÃO DE GRAÇAS:'])
-
-    for i in range(len(acao_de_gracas)):
-        ws.append([acao_de_gracas[i]])
-    ws.append([])  # linha em branco
-
-#############################################################################################################
-    # Inserir Intenções
-    ws.append(['INTENÇÕES:'])
-
-    for i in range(len(intencoes)):
-
-        ws.append([intencoes[i] ])
-
-    ws.append([])  # linha em branco
-
-#############################################################################################################
-    # Inserir Recuperação de Saúde
-    ws.append(['RECUPERAÇÃO DE SAÚDE:'])
-
-    for i in range(len(recuperacao_de_saude)):
-
-        ws.append([recuperacao_de_saude[i]])
-
-    ws.append([])  # linha em branco
-
-#############################################################################################################
-    # Inserir Sétimo Dia
-    ws.append(["7º DIA:"])
-
-    for i in range(len(setimo_dia)):
-
-        ws.append([f'+ {setimo_dia[i]}'])
-
-    ws.append([])  # linha em branco
-
-#############################################################################################################
-    # Inserir Almas
-    ws.append(["IRMÃOS FALECIDOS:"])
-
-    for i in range(len(almas)):
-
-        ws.append([f'+ {almas[i]}'])
-
-    ws.append([])  # linha em branco
-
-#############################################################################################################
+#-------------------------------------------------------------------------------------------------------------
 
     borda = Border(
         left=Side(style="thin"),
@@ -302,19 +312,34 @@ def imprimir():
         for cell in row:
             cell.border = borda
 
-#############################################################################################################
+    for col in ws.columns:
+        max_length = 0
+        col_letter = get_column_letter(col[0].column)
+
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+
+        ws.column_dimensions[col_letter].width = max_length + 5
+
+#-------------------------------------------------------------------------------------------------------------
     # Salvar arquivo
     wb.save("Intenções.xlsx")
 
     print("\nArquivo Excel 'Intenções.xlsx' criado com sucesso!\n")
 
 
-#############################################################################################################
+#-------------------------------------------------------------------------------------------------------------
     print(f'\nO valor total do dia é de: R$ {valor_total:.2f}\n')
     
     sair_menu2 = 1
 
-#############################################################################################################
+#-------------------------------------------------------------------------------------------------------------
+
+#FUNÇÃO DE EDITAR A INTENÇÃO JÁ MARCADA
 
 def editar(lista):
 
@@ -366,6 +391,9 @@ def editar(lista):
     return(divida)
 
 
+#-------------------------------------------------------------------------------------------------------------
+
+#MENU PRINCIPAL
 
 sair_menu1 = 0
 
@@ -378,8 +406,9 @@ while (sair_menu1 == 0):
 
                     case 1:
                         valor_pessoa = 0
-                        valor_total += menu_pessoa(valor_pessoa)
+                        
 
+                        valor_total += menu_pessoa(valor_pessoa)
 
                     case 2:
 
@@ -388,35 +417,39 @@ while (sair_menu1 == 0):
                     case 3:
 
                         try:
-                            opcao_editar = int(input('\nGostaria de editar qual dos tipos de intenção?\n1- Honra e Louvor\n2- Aniversário\n3- Aniversário de Casamento\n4- Ação de Graças\n5- Intenções\n6- Recuperação de Saúde\n7- 7º Dia\n8- Almas\n-> '))
+                            opcao_editar = int(input('\nGostaria de editar qual dos tipos de intenção?\n1- Honra e Louvor\n2- Aniversário\n3- Aniversário de Casamento\n4- Ação de Graças\n5- Intenções\n6- Recuperação de Saúde\n7- 7º Dia\n8- Almas\n9- Voltar\n-> '))
                             
                             lista = None
 
                             match(opcao_editar):
 
                                 case 1:
-                                    lista = honra_e_louvor
+                                    lista = categorias['HONRA E LOUVOR']
 
                                 case 2:
-                                    lista = aniversario
+                                    lista = categorias['ANIVERSÁRIO NATALÍCIO']
 
                                 case 3:
-                                    lista = aniversario_de_casamento
+                                    lista = categorias['ANIVERSÁRIO DE CASAMENTO']
 
                                 case 4:
-                                    lista = acao_de_gracas
+                                    lista = categorias['AÇÃO DE GRAÇAS']
 
                                 case 5:
-                                    lista = intencoes
+                                    lista = categorias['INTENÇÃO']
 
                                 case 6:
-                                    lista = recuperacao_de_saude
+                                    lista = categorias['RECUPERAÇÃO DE SAÚDE']
 
                                 case 7:
-                                    lista = setimo_dia
+                                    lista = categorias['7º DIA']
 
                                 case 8:
-                                    lista = almas
+                                    lista = categorias['IRMÃOS FALECIDOS']
+
+                                case 9:
+                                    print('\nVoltando ao menu..\n')
+                                    continue
 
                                 case _:
                                     print('\nDigite uma das opções exibidas no menu!\n')
