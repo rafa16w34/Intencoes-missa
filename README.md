@@ -57,10 +57,13 @@ Para configurar o ambiente automaticamente, execute o script correspondente ao s
 setup.bat
 ```
 
-*AVISOS IMPORTANTES:
-    Para fazer a leitura do arquivo docx, o mesmo precisa estar nomeado como ```intencoes.docx```. Caso o arquivo docx esteja mal configurado a planilha pode ficar desestruturada;
-    É importante verificar a planilha para corrigir possíveis erros, no caso de uma formatação ruim do arquivo docx original;
-    A planilha deve ser reconfigurada para que a impressão ocorra corretamente (Ex: Tamanho das colunas e bordas);
+### AVISOS IMPORTANTES:
 
-*FUTURAS IMPLEMENTAÇÕES:
-    Uma interface gráfica, ao invés de usar pelo terminal, para que esteja mais acessível para pessoas leigas;
+- Para fazer a leitura do arquivo docx, o mesmo precisa estar nomeado como ```intencoes.docx```;
+- Caso o arquivo docx esteja mal configurado a planilha pode ficar desestruturada;
+- É importante verificar a planilha para corrigir possíveis erros, no caso de uma formatação ruim do arquivo docx original;
+- A planilha deve ser reconfigurada para que a impressão ocorra corretamente (Ex: Tamanho das colunas e bordas);
+
+### FUTURAS IMPLEMENTAÇÕES:
+
+- Uma interface gráfica, ao invés de usar pelo terminal, para que esteja mais acessível para pessoas leigas;
