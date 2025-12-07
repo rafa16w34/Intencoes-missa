@@ -1,2 +1,5 @@
-Lista do Pix 23/11/2025 - 12:00:
-- Rafael : R$ 3,00
+Lista do Pix 07/12/2025 - 06:00:
+- Ad : R$ 3,00
+- Nenhum : R$ 9,00
+- Teste : R$ 3,00
+- Teste : R$ 63,00

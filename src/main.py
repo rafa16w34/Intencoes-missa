@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from openpyxl import Workbook
 from openpyxl.styles import Border,Side
 from openpyxl.utils import get_column_letter
@@ -6,7 +6,8 @@ from docx import Document
 
 data_hoje  = datetime.now()
 
-data_formatada = data_hoje.strftime("%d/%m/%Y - %H:00")
+data_ajustada = data_hoje + timedelta(hours=1)#Soma 1 na hora porque temos que imprimir 10 minutos antes
+data_formatada = data_ajustada.strftime("%d/%m/%Y - %H:00")
 
 #Listas para cada uma das intenções
 categorias = {
@@ -34,7 +35,7 @@ def extrair_docx():
     def normalizar(txt):
         return " ".join(txt.strip().upper().split())
 
-    arquivo = "teste.docx"
+    arquivo = "intencoes.docx"
     doc = Document(arquivo)
 
     TITULOS = [
