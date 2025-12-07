@@ -1,19 +1,18 @@
-Ignorar ambiente virtual
-
+# Ignorar ambiente virtual
 venv/
 
-Ignorar arquivos temporários de Python
+# Ignorar arquivos temporários de Python
+__pycache__/
+*.pyc
 
-pycache/ *.pyc
+# Ignorar arquivos de editor
+.vscode/
+.idea/
 
-Ignorar arquivos de editor
+# Arquivos gerados automaticamente
+Intenções.xlsx
+Lista_Pix.txt
 
-.vscode/ .idea/
-
-Arquivos gerados automaticamente
-
-Intenções.xlsx Lista_Pix.txt
-
-Sistema operacional
-
-.DS_Store Thumbs.db
+# Sistema operacional
+.DS_Store
+Thumbs.db
