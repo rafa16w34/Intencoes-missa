@@ -348,27 +348,40 @@ def editar(lista):
 
     if (len(lista) != 0):
         
-        for i in range(len(lista)):
-            print(f'\n{i} : {lista[i]}')
+        for i in range(len(lista)+1):
+
+            if (i < len(lista)):
+                print(f'\n{i} : {lista[i]}') #Lista todas as intenções marcadas no tipo escolhido com o indice na frente
+            else:
+                print(f'\n{i} : Sair')
+            
         print('\nEscolha qual será editado pelo índice:\n')
 
         while True:
 
             try:
                 edicao = int(input('-> '))
+
             except ValueError:
                 print('\nDigite um valor válido!\n')
                 continue
 
             # Verifica se o índice existe
             if (0 <= edicao) and (edicao < len(lista)):
+                sair = False
                 break
+
+            elif (edicao >= len(lista)):
+                sair = True
+                break
+
             else:
+
                 print('\nÍndice inválido! Tente novamente.\n')
 
-        while True:
+        while sair == False:
 
-            print('\nGostaria de remover ou editar?\n')
+            print('\nGostaria de remover, editar ou sair?\n')
             opcao_edicao = input('-> ').lower()
 
             if opcao_edicao == 'remover':
@@ -381,6 +394,9 @@ def editar(lista):
                 nova_intencao = input('\nDigite a nova intenção:\n-> ')
                 lista[edicao] = nova_intencao
                 print('\nIntenção editada com sucesso!\n')
+                break
+
+            elif opcao_edicao == 'sair':
                 break
 
             else:
