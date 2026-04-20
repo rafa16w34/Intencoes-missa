@@ -126,7 +126,9 @@ for titulo, itens in dados_importados.items():
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def adicionar_intencao(categoria, texto):
+
     linhas = quebrar_linha(texto.title())
+
     for linha in linhas:
         categorias[categoria].append(linha)
 
@@ -214,75 +216,103 @@ def menu_pessoa(valor_pessoa):
 
                 case 9:
 
-                
-                    print(f'\nO valor a ser pago é de R$ {valor_pessoa:.2f}\n')
+                    if (valor_pessoa > 0):
 
-                    metodo_de_pagamento = int(input('\nQual vai ser a forma de pagamento?\n1- Dinheiro\n2- Pix\n-> '))
+                    
+                        print(f'\nO valor a ser pago é de R$ {valor_pessoa:.2f}\n')
 
-                    match(metodo_de_pagamento):
+                        metodo_de_pagamento = int(input('\nQual vai ser a forma de pagamento?\n1- Dinheiro\n2- Pix\n3- Voltar\n-> '))
 
-                        case 1:#Dinheiro
+                        match(metodo_de_pagamento):
 
-                            while True:
-                                
-                                try:
+                            case 1:#Dinheiro
 
-                                    valor_recebido = int(input('\nDigite o valor recebido:\n-> R$ '))
+                                while True:
+                                    
+                                    try:
 
-                                    if (valor_recebido < valor_pessoa):
+                                        valor_recebido = int(input('\nDigite o valor recebido:\n-> R$ '))
 
+                                        if (valor_recebido < valor_pessoa):
+
+                                            print('\nDigite um valor válido!\n')
+
+
+                                        else:
+                                            
+                                            if (valor_recebido > valor_pessoa):
+
+                                                print(f'\nTroco: R$ {(valor_recebido - valor_pessoa):.2f}\n')
+                                            
+                                            break
+
+                                    
+                                    
+                                    except(ValueError):
+                                        
                                         print('\nDigite um valor válido!\n')
 
+                                pagamento_confirmado = True
 
-                                    else:
+                            case 2:#Pix
+
+                                nome_pix = str(input("\nQual é o nome quem irá fazer o pix?\n-> "))
+
+                                nome_pix = nome_pix.lower()
+
+                                pix.append(nome_pix.title())
+                                pix.append(valor_pessoa)
+
+                                with open ('Lista_Pix.txt','w') as arq:
+
+                                    arq.write(f'Lista do Pix {data_formatada}:\n')
+
+                                    for i in range(len(pix)):
+
+                                        if ((i+1)%2 != 0):                                    
+                                            arq.write(f'- {pix[i]} : R$ {pix[i+1]},00\n')
+                                            i+2
                                         
-                                        if (valor_recebido > valor_pessoa):
+                                        if i+2 >= len(pix):
+                                            break
 
-                                            print(f'\nTroco: R$ {(valor_recebido - valor_pessoa):.2f}\n')
-                                        
-                                        break
+                                pagamento_confirmado = True
 
-                                
-                                
-                                except(ValueError):
-                                    
-                                    print('\nDigite um valor válido!\n')
+                            case 3:#sair
 
-                        case 2:#Pix
-
-                            nome_pix = str(input("\nQual é o nome quem irá fazer o pix?\n-> "))
-
-                            nome_pix = nome_pix.lower()
-
-                            pix.append(nome_pix.title())
-                            pix.append(valor_pessoa)
-
-                            with open ('Lista_Pix.txt','w') as arq:
-
-                                arq.write(f'Lista do Pix {data_formatada}:\n')
-
-                                for i in range(len(pix)):
-
-                                    if ((i+1)%2 != 0):                                    
-                                        arq.write(f'- {pix[i]} : R$ {pix[i+1]},00\n')
-                                        i+2
-                                    
-                                    if i+2 >= len(pix):
-                                        break
+                                pagamento_confirmado = False
 
 
 
-                    confirmacao = str(input('\nAperte enter para continuar\n'))
 
-                    print('\nVoltando ao menu inicial...\n')
+                            case _:
 
-                    sair_menu2 = 1
-                
+                                print('\nErro: Digite uma das opções mostradas no menu!\n')
+                                pagamento_confirmado = False
+
+
+                        if (pagamento_confirmado == True):
+
+                            confirmacao = str(input('\nAperte enter para continuar\n'))
+
+                            print('\nVoltando ao menu inicial...\n')
+
+                            sair_menu2 = 1
+
+                    else:#Voltar para o menu caso nao tenha marcado nenhuma intenção
+
+                        confirmacao = str(input('\nAperte enter para continuar\n'))
+
+                        print('\nVoltando ao menu inicial...\n')
+
+                        sair_menu2 = 1
+
 
                 case _: 
 
                     print('\nErro: Digite uma das opções mostradas no menu!\n')
-        
+                    
+                    
 
         except(ValueError):
             print('\nErro: Digite uma das opções mostradas no menu!\n')
@@ -427,7 +457,7 @@ def editar(lista):
                 sair = False
                 break
 
-            elif (edicao >= len(lista)):
+            elif (edicao == len(lista)):
                 sair = True
                 break
 
