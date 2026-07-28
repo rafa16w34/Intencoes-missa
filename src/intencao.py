@@ -1,7 +1,7 @@
 
-from config import categorias
-from config import pix
-from config import data_formatada
+from config import categorias, registro
+from pagamento import menu
+
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -98,86 +98,7 @@ def menu_pessoa(valor_pessoa):
 
                     if (valor_pessoa > 0):
 
-                    
-                        print(f'\nO valor a ser pago é de R$ {valor_pessoa:.2f}\n')
-
-                        metodo_de_pagamento = int(input('\nQual vai ser a forma de pagamento?\n1- Dinheiro\n2- Pix\n3- Voltar\n-> '))
-
-                        match(metodo_de_pagamento):
-
-                            case 1:#Dinheiro
-
-                                while True:
-                                    
-                                    try:
-
-                                        valor_recebido = int(input('\nDigite o valor recebido:\n-> R$ '))
-
-                                        if (valor_recebido < valor_pessoa):
-
-                                            print('\nDigite um valor válido!\n')
-
-
-                                        else:
-                                            
-                                            if (valor_recebido > valor_pessoa):
-
-                                                print(f'\nTroco: R$ {(valor_recebido - valor_pessoa):.2f}\n')
-                                            
-                                            break
-
-                                    
-                                    
-                                    except(ValueError):
-                                        
-                                        print('\nDigite um valor válido!\n')
-
-                                pagamento_confirmado = True
-
-                            case 2:#Pix
-
-                                nome_pix = str(input("\nQual é o nome quem irá fazer o pix?\n-> "))
-
-                                nome_pix = nome_pix.lower()
-
-                                pix.append(nome_pix.title())
-                                pix.append(valor_pessoa)
-
-                                with open ('output/Lista_Pix.txt','w') as arq:
-
-                                    arq.write(f'Lista do Pix {data_formatada}:\n')
-
-                                    for i in range(len(pix)):
-
-                                        if ((i+1)%2 != 0):                                    
-                                            arq.write(f'- {pix[i]} : R$ {pix[i+1]},00\n')
-                                            i+2
-                                        
-                                        if i+2 >= len(pix):
-                                            break
-
-                                pagamento_confirmado = True
-
-                            case 3:#sair
-
-                                pagamento_confirmado = False
-
-
-
-
-                            case _:
-
-                                print('\nErro: Digite uma das opções mostradas no menu!\n')
-                                pagamento_confirmado = False
-
-
-                        if (pagamento_confirmado == True):
-
-                            confirmacao = str(input('\nAperte enter para continuar\n'))
-
-                            print('\nVoltando ao menu inicial...\n')
-
-                            sair_menu2 = 1
+                        sair_menu2 = menu(valor_pessoa)
 
                     else:#Voltar para o menu caso nao tenha marcado nenhuma intenção
 
@@ -260,11 +181,16 @@ def editar(lista):
                 lista.pop(edicao)
                 divida -= 3
                 print("\nIntenção removida com sucesso!\n")
+
+
+                registro.append(f"Intenção removida - R$ {divida:.2f} \n")
+
+
                 break
 
             elif opcao_edicao == 'editar':
                 nova_intencao = input('\nDigite a nova intenção:\n-> ')
-                lista[edicao] = nova_intencao
+                lista[edicao] = nova_intencao.title()
                 print('\nIntenção editada com sucesso!\n')
                 break
 
@@ -272,7 +198,7 @@ def editar(lista):
                 break
 
             else:
-                print('Digite "remover" ou "editar" !')
+                print('Digite "remover", "editar" ou "sair" !')
 
     else:
         print('\nErro: Lista vazia!\n')
@@ -280,7 +206,7 @@ def editar(lista):
     return(divida)
 
 
-def quebrar_linha(texto, limite=35):
+def quebrar_linha(texto, limite=100):
     palavras = texto.split()
     linhas = []
     linha_atual = ""

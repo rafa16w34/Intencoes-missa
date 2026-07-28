@@ -1,10 +1,9 @@
 
-from intencao import menu_pessoa
-from intencao import editar
-from imprimir import imprimir
+from intencao import menu_pessoa, editar
+from imprimir import imprimir, imprimir_registro
 from leitura import extrair_docx
-from config import categorias
-from config import valor_total
+from config import categorias, valor_total, registro
+import config
 
 #-------------------------------------------------------------------------------------------------------------
 
@@ -39,6 +38,8 @@ while True:
         case 2:
 
             print(f'\nDados atuais:\nTotal de intenções: {valor_total/3}\nValor total: R$ {valor_total:.2f}')
+
+            imprimir_registro()
 
         case 3:
 
@@ -101,6 +102,11 @@ while True:
             confirmacao = str(input('\nDigite "sim" para sair.\n(Tudo o que foi digitado será perdido caso não tenha sido impresso!)\n-> '))
 
             if (confirmacao == 'sim'):
+
+                registro.append(f'O valor total do dia é de: R$ {valor_total:.2f} -- Dinheiro: R$ {config.valor_dinheiro:.2f} -- Pix: R$ {config.valor_pix:.2f}')
+
+                imprimir_registro()
+
                 print('\nFinalizando programa...\n')
                 break
 
