@@ -18,20 +18,11 @@ O programa permite:
     IntencoesMissa/
     │── src/
     │   └── main.py
-    |
-    │── input/
-    │   └── intencoes.docx (Arquivo docx das intenções marcadas anteriormente)
-    |
-    │── output/
-    │   └── Lista_Pix.txt (gerado automaticamente)
-    │   └── Intenções.xlsx (gerado automaticamente)
-    |
     │── requirements.txt (requisitos do ambiente virtual)
     │── README.md
-    ├── LICENSE
-    ├── .gitignore
-    ├── .gitattributes
-
+    │── intencoes.docx    (Arquivo docx das intenções marcadas anteriormente)
+    │── Lista_Pix.txt (gerado automaticamente)
+    │── Intenções.xlsx (gerado automaticamente)
 
 ## Requisitos do sistema:
 
