@@ -31,3 +31,6 @@ lista_pix = []
 valor_total = 0
 valor_dinheiro = 0
 valor_pix = 0
+
+doacao_dinheiro = 0
+doacao_pix = 0

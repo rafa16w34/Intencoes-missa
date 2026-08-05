@@ -352,5 +352,9 @@ def imprimir_registro():
 
             arq.write(f'{registro[i]}')
 
+        responsavel = str(input("\nDigite o nome do responsável:\n->"))
+
+        arq.write(f'\nPessoa responsável: {responsavel.title()}\n')
+
     print(f"\nArquivo Registro.txt criado com sucesso!\n")
  

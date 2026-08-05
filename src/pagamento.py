@@ -21,10 +21,14 @@ def menu(valor_pessoa):
 
             pagamento_confirmado = False
 
+            return 0
+
         case _:
 
             print('\nErro: Digite uma das opções mostradas no menu!\n')
             pagamento_confirmado = False
+
+            return 0
 
 
     if (pagamento_confirmado == True):
@@ -37,7 +41,11 @@ def menu(valor_pessoa):
 
 
 
+
+
 def dinheiro(valor_pessoa):
+
+    doacao_dinheiro = 0
 
     while True:
         
@@ -54,7 +62,9 @@ def dinheiro(valor_pessoa):
                 
                 if (valor_recebido > valor_pessoa):
 
-                    print(f'\nTroco: R$ {(valor_recebido - valor_pessoa):.2f}\n')
+                    
+
+                    doacao_dinheiro = troco(valor_recebido,valor_pessoa)
                     
                 
                 break
@@ -65,7 +75,7 @@ def dinheiro(valor_pessoa):
             
             print('\nDigite um valor válido!\n')
 
-    config.registro.append(f"Valor: R$ {valor_pessoa:.2f} -- Valor Pago: R$ {valor_recebido:.2f} (Troco: R$ {(valor_recebido - valor_pessoa):.2f}) -- Dinheiro\n")
+    config.registro.append(f"Valor: R$ {valor_pessoa:.2f} -- Valor Pago: R$ {valor_recebido:.2f} (Troco: R$ {((valor_recebido - valor_pessoa)- doacao_dinheiro):.2f} -- Doação: R$ {(doacao_dinheiro):.2f}) -- Dinheiro\n")
 
     config.valor_dinheiro += valor_pessoa
 
@@ -74,14 +84,41 @@ def dinheiro(valor_pessoa):
 
 def pix(valor_pessoa):
 
+
+    doacao_pix = 0
+
     nome_pix = str(input("\nQual é o nome quem irá fazer o pix?\n-> "))
 
     nome_pix = nome_pix.lower()
 
     config.lista_pix.append(nome_pix.title())
 
-    valor_pix = int(input(f"\nInforme o valor pago no Pix (solicite o comprovante para {nome_pix.title()})\n->"))
+    while True:
 
+        try:
+
+            valor_pix = int(input(f"\nInforme o valor pago no Pix (solicite o comprovante para {nome_pix.title()})\n->"))
+
+            if (valor_pix < valor_pessoa):
+
+                print('\nDigite um valor válido!\n')
+
+
+            else:
+                
+                if (valor_pix > valor_pessoa):
+
+
+                    doacao_pix = troco(valor_pix,valor_pessoa)
+                    
+                
+                break
+
+        except(ValueError):
+                    
+            print('\nDigite um valor válido!\n')
+
+            
     config.lista_pix.append(valor_pix)
 
     with open ('output/Lista_Pix.txt','w') as arq:
@@ -94,7 +131,7 @@ def pix(valor_pessoa):
 
                 arq.write(f'- {config.lista_pix[i]} : R$ {config.lista_pix[i+1]},00\n')
 
-                pix_registro = (f"Valor: R$ {valor_pessoa:.2f} -- Valor Pago: R$ {config.lista_pix[i+1]:.2f} (Troco: R$ {(config.lista_pix[i+1] - valor_pessoa):.2f}) -- Pix\n")
+                pix_registro = (f"Valor: R$ {valor_pessoa:.2f} -- Valor Pago: R$ {config.lista_pix[i+1]:.2f} (Troco: R$ {((config.lista_pix[i+1] - valor_pessoa)- doacao_pix):.2f} -- Doação: R$ {(doacao_pix):.2f}) -- Pix\n")
 
                 i+2
             
@@ -106,3 +143,32 @@ def pix(valor_pessoa):
     config.valor_pix += valor_pessoa
 
     return True
+
+
+def troco(valor,valor_pessoa):
+
+    print(f'\nTroco: R$ {(valor - valor_pessoa):.2f}\n')
+    
+    while True:
+
+        try:
+
+            doacao = int(input(f"\nDigite o valor do troco que será destinado a doação:\n-> R$ "))
+
+            if (doacao > (valor - valor_pessoa)):
+
+                print("\nValor de doação maior do que o de troco!\n")
+
+            else:
+
+                print(f'\nTroco: R$ {((valor - valor_pessoa)- doacao):.2f} -- Doação: R$ {(doacao):.2f} \n')
+
+                break
+
+        except(ValueError):
+                
+                print('\nDigite um valor válido!\n')
+
+    return doacao
+
+
