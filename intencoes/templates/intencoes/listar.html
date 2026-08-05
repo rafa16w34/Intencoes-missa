@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intenções das Missas</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"> Intenções de Missa</h2>
+        <a href="{% url 'cadastrar_intencao' %}" class="btn btn-primary">+ Nova Intenção</a>
+    </div>
+
+    {% if lista_missas %}
+        <!-- Navegação pelas Abas (Cabeçalho) -->
+        <ul class="nav nav-tabs id="missasTab" role="tablist">
+            {% for missa in lista_missas %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                            id="{{ missa.id }}-tab" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#{{ missa.id }}" 
+                            type="button" 
+                            role="tab">
+                        <strong>{{ missa.data|date:"d/m/Y" }}</strong> - {{ missa.horario|time:"H:i" }}h
+                        <span class="badge bg-secondary ms-1">{{ missa.total }}</span>
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Conteúdo das Abas -->
+        <div class="tab-content bg-white p-4 border border-top-0 rounded-bottom shadow-sm" id="missasTabContent">
+            {% for missa in lista_missas %}
+                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+                     id="{{ missa.id }}" 
+                     role="tabpanel">
+                    
+                    <h4 class="mb-3 text-secondary">
+                        Missa do dia <strong>{{ missa.data|date:"d/m/Y" }}</strong> às <strong>{{ missa.horario|time:"H:i" }}h</strong>
+                    </h4>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Intenção / Nome</th>
+                                    <th>Tipo de Intenção</th>
+                                    <th>Solicitante</th>
+                                    <th>Observações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in missa.intencoes %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td class="fw-bold">{{ item.nome_intencao }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if item.tipo == 'falecido' %}bg-dark
+                                            {% elif item.tipo == 'acao_gracas' %}bg-success
+                                            {% elif item.tipo == 'saude' %}bg-info text-dark
+                                            {% elif item.tipo == 'aniversario' %}bg-warning text-dark
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ item.get_tipo_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ item.nome_solicitante }}</td>
+                                    <td><small class="text-muted">{{ item.observacao|default:"-" }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center mt-4">
+            Nenhuma intenção cadastrada até o momento.
+        </div>
+    {% endif %}
+</div>
+
+<!-- Bootstrap JS (Necessário para a troca de abas funcionar) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
