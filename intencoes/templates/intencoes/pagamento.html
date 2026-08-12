@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Pagamento</h2>
+    <p class="text-muted">
+    Missa: {{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}
+</p>
+
+    <!-- Lista das intenções lançadas nesta sessão -->
+    <ul class="list-group mb-3">
+        {% for item in intencoes_pendentes %}
+            <li class="list-group-item">{{ item.nome_intencao }} <span class="text-muted">({{ item.get_tipo_display }})</span></li>
+        {% endfor %}
+    </ul>
+
+    <div class="alert alert-primary">
+        Total: <strong>{{ intencoes_pendentes|length }} intenção(ões) — R$ {{ valor_total }}</strong>
+    </div>
+
+    <!-- Formulário de Pagamento -->
+    <form id="form-pagamento" method="POST">
+        {% csrf_token %}
+
+        <!-- Campo Forma de Pagamento -->
+        <div class="mb-3">
+            <label for="id_forma_pagamento" class="form-label">Forma:</label>
+            {{ form.forma_pagamento }}
+        </div>
+
+        <!-- Campo Valor Recebido -->
+        <div class="mb-3">
+            <label for="id_valor_recebido" class="form-label">Valor Recebido:</label>
+            {{ form.valor_recebido }}
+        </div>
+
+        <!-- Campo Doação (Escondido por padrão) -->
+        <div class="mb-3" id="campo-doacao" style="display: none;">
+            <label for="id_doacao" class="form-label">Doação (do troco):</label>
+            {{ form.doacao }}
+            <div id="info-troco" class="form-text text-info"></div>
+        </div>
+
+        <!-- Campo Nome do Pix (Escondido por padrão) -->
+        <div class="mb-3" id="campo-pix" style="display: none;">
+            <label for="id_nome_pix" class="form-label">Nome de quem fez o Pix:</label>
+            {{ form.nome_pix }}
+        </div>
+
+        <!-- Botões de Ação -->
+        <button type="button" class="btn btn-primary" onclick="abrirConfirmacao()">Confirmar pagamento</button>
+        <a href="{% url 'cadastrar_intencao' missa.id %}" class="btn btn-secondary">← Voltar e marcar mais</a>
+    </form>
+</div>
+
+<!-- Modal / Caixa de Confirmação dos Dados -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Dados do Pagamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Valor Total:</strong> R$ <span id="conf-total"></span></li>
+                    <li class="list-group-item"><strong>Valor Recebido:</strong> R$ <span id="conf-recebido"></span></li>
+                    <li class="list-group-item"><strong>Troco:</strong> R$ <span id="conf-troco"></span></li>
+                    <li class="list-group-item"><strong>Doação:</strong> R$ <span id="conf-doacao"></span></li>
+                    <li class="list-group-item"><strong>Forma de Pagamento:</strong> <span id="conf-forma"></span></li>
+                    <li class="list-group-item" id="conf-pix-container" style="display: none;">
+                        <strong>Responsável Pix:</strong> <span id="conf-pix-nome"></span>
+                    </li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Corrigir</button>
+                <button type="button" class="btn btn-success" onclick="submeterFormulario()">Finalizar Pagamento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const valorTotal = parseFloat("{{ valor_total }}") || 0;
+
+    const selectForma = document.querySelector('[name="forma_pagamento"]') || document.getElementById('id_forma_pagamento');
+    const inputRecebido = document.querySelector('[name="valor_recebido"]') || document.getElementById('id_valor_recebido');
+    const inputDoacao = document.querySelector('[name="doacao"]') || document.getElementById('id_doacao');
+    const inputNomePix = document.querySelector('[name="nome_pix"]') || document.getElementById('id_nome_pix');
+
+    const campoDoacao = document.getElementById('campo-doacao');
+    const campoPix = document.getElementById('campo-pix');
+    const infoTroco = document.getElementById('info-troco');
+
+    function atualizarVisibilidade() {
+        if (!selectForma) return;
+        const formaSelecionada = selectForma.options[selectForma.selectedIndex]?.text.toLowerCase() || '';
+        
+        if (formaSelecionada.includes('pix')) {
+            campoPix.style.display = 'block';
+        } else {
+            campoPix.style.display = 'none';
+        }
+
+        const valorRecebido = parseFloat(inputRecebido.value) || 0;
+        
+        if (valorRecebido > valorTotal) {
+            campoDoacao.style.display = 'block';
+            const trocoMaximo = valorRecebido - valorTotal;
+            const doacaoVal = parseFloat(inputDoacao.value) || 0;
+            const trocoFinal = Math.max(0, trocoMaximo - doacaoVal);
+            
+            infoTroco.innerText = `Troco disponível: R$ ${trocoFinal.toFixed(2)}`;
+        } else {
+            campoDoacao.style.display = 'none';
+            if (inputDoacao) inputDoacao.value = 0;
+        }
+    }
+
+    if (selectForma) selectForma.addEventListener('change', atualizarVisibilidade);
+    if (inputRecebido) inputRecebido.addEventListener('input', atualizarVisibilidade);
+    if (inputDoacao) inputDoacao.addEventListener('input', atualizarVisibilidade);
+
+    document.addEventListener('DOMContentLoaded', atualizarVisibilidade);
+
+    function abrirConfirmacao() {
+        const valorRecebido = parseFloat(inputRecebido.value) || 0;
+        const doacao = parseFloat(inputDoacao.value) || 0;
+        const troco = Math.max(0, valorRecebido - valorTotal - doacao);
+        const formaText = selectForma.options[selectForma.selectedIndex]?.text || '-';
+
+        document.getElementById('conf-total').innerText = valorTotal.toFixed(2);
+        document.getElementById('conf-recebido').innerText = valorRecebido.toFixed(2);
+        document.getElementById('conf-troco').innerText = troco.toFixed(2);
+        document.getElementById('conf-doacao').innerText = doacao.toFixed(2);
+        document.getElementById('conf-forma').innerText = formaText;
+
+        if (formaText.toLowerCase().includes('pix')) {
+            document.getElementById('conf-pix-container').style.display = 'block';
+            document.getElementById('conf-pix-nome').innerText = inputNomePix.value || 'Não informado';
+        } else {
+            document.getElementById('conf-pix-container').style.display = 'none';
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
+        modal.show();
+    }
+
+    function submeterFormulario() {
+        document.getElementById('form-pagamento').submit();
+    }
+</script>
+{% endblock %}
