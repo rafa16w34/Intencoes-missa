@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block title %}Pagamento da Rodada - Catedral Divino Espírito Santo{% endblock %}
+
+{% block content %}
+<div class="container pb-5" style="max-width: 720px;">
+    <!-- Navegação de Retorno Controlada -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <a href="{% url 'cadastrar_intencao' missa.id %}" class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i> ← Voltar e marcar mais intenções
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="abrirAvisoPendente()">
+            <i class="bi bi-pause-circle me-1"></i> Salvar como Pendente e Voltar
+        </button>
+    </div>
+
+    <div class="card card-custom p-4 bg-white">
+        <div class="border-bottom pb-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-primary">Missa: {{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}h</span>
+                <span class="badge bg-secondary">Lote #{{ lote.id }}</span>
+            </div>
+            <h3 class="fw-bold mb-1">Pagamento da Rodada</h3>
+            <p class="text-muted small mb-0">Confira as intenções deste fiel e registre o recebimento integral em Dinheiro ou Pix.</p>
+        </div>
+
+        <!-- Resumo das Intenções Desta Rodada -->
+        <h6 class="fw-bold text-secondary mb-2">Intenções deste fiel ({{ intencoes_pendentes|length }}):</h6>
+        <ul class="list-group mb-4">
+            {% for item in intencoes_pendentes %}
+                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-semibold text-dark">{{ item.nome_intencao }}</span>
+                    <span class="badge bg-secondary">{{ item.get_tipo_display }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Caixa de Total -->
+        <div class="alert alert-primary d-flex justify-content-between align-items-center mb-4 p-3">
+            <div>
+                <span class="text-muted d-block small">Valor Total Deste Lote:</span>
+                <span class="fs-3 fw-bold text-primary">R$ {{ valor_total|floatformat:2 }}</span>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border border-primary px-3 py-2 fs-6">
+                {{ intencoes_pendentes|length }} x R$ 3,00
+            </span>
+        </div>
+
+        <!-- Formulário de Pagamento -->
+        <form id="form-pagamento" method="POST">
+            {% csrf_token %}
+
+            <!-- Forma de Pagamento -->
+            <div class="mb-3">
+                <label for="id_forma" class="form-label fw-semibold">Forma de Pagamento: <span class="text-danger">*</span></label>
+                {{ form.forma }}
+                {% if form.forma.errors %}
+                    <div class="text-danger small mt-1">{{ form.forma.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Valor Recebido -->
+            <div class="mb-3">
+                <label for="id_valor_recebido" class="form-label fw-semibold">Valor Recebido do Fiel (R$): <span class="text-danger">*</span></label>
+                {{ form.valor_recebido }}
+                {% if form.valor_recebido.errors %}
+                    <div class="text-danger small mt-1">{{ form.valor_recebido.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Campo Pix (Visível apenas se Forma = Pix) -->
+            <div class="mb-3 p-3 bg-light rounded border" id="campo-pix" style="display: none;">
+                <label for="id_nome_pix" class="form-label fw-semibold text-info-emphasis">
+                    <i class="bi bi-person-badge me-1"></i> Nome do Responsável / Pagador do Pix: <span class="text-danger">*</span>
+                </label>
+                {{ form.nome_pix }}
+                {% if form.nome_pix.errors %}
+                    <div class="text-danger small mt-1">{{ form.nome_pix.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">Obrigatório para conferência do comprovante (iniciais maiúsculas automáticas).</small>
+            </div>
+
+            <!-- Campo Doação / Troco (Visível se Valor Recebido > Valor Total) -->
+            <div class="mb-3 p-3 bg-warning-subtle rounded border border-warning" id="campo-doacao" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label for="id_doacao" class="form-label fw-semibold mb-0 text-dark">
+                        <i class="bi bi-heart-fill text-danger me-1"></i> Doação para a Paróquia (do troco):
+                    </label>
+                    <span id="info-troco-bruto" class="badge bg-warning text-dark"></span>
+                </div>
+                {{ form.doacao }}
+                <div id="info-troco-liquido" class="form-text text-dark fw-bold mt-2"></div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="d-flex flex-wrap gap-2 pt-2">
+                <button type="button" class="btn btn-success btn-lg flex-grow-1 shadow-sm" onclick="abrirConfirmacao()">
+                    <i class="bi bi-check-circle-fill me-1"></i> Confirmar Pagamento do Lote
+                </button>
+                <button type="button" class="btn btn-outline-warning text-dark" onclick="abrirAvisoPendente()">
+                    Salvar como Pendente
+                </button>
+                <a href="{% url 'cancelar_rodada' missa.id %}"
+                   class="btn btn-outline-danger"
+                   onclick="return confirm('Deseja realmente cancelar? Todas as intenções deste lote serão descartadas.');">
+                    Descartar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Confirmação dos Dados de Pagamento -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-shield-check me-1"></i> Confirmar Pagamento do Lote #{{ lote.id }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Forma de Pagamento:</span>
+                        <strong id="conf-forma" class="text-primary text-uppercase"></strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between" id="conf-pix-container" style="display: none;">
+                        <span>Pagador do Pix:</span>
+                        <strong id="conf-pix-nome"></strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Valor Total das Intenções:</span>
+                        <strong>R$ <span id="conf-total"></span></strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Valor Entregue / Pago:</span>
+                        <strong>R$ <span id="conf-recebido"></span></strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between text-success" id="conf-doacao-row" style="display: none;">
+                        <span>Doação destinada:</span>
+                        <strong>R$ <span id="conf-doacao"></span></strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between text-primary" id="conf-troco-row" style="display: none;">
+                        <span>Troco a devolver:</span>
+                        <strong class="fs-5">R$ <span id="conf-troco"></span></strong>
+                    </li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Corrigir Dados</button>
+                <button type="button" class="btn btn-success fw-bold px-4" onclick="submeterFormulario()">
+                    <i class="bi bi-check-lg me-1"></i> Finalizar Pagamento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Alerta ao Deixar Pendente -->
+<div class="modal fade" id="modalAvisoPendente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Salvar com Pagamento Pendente?
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    Você está saindo sem concluir o pagamento do lote de
+                    <strong>{{ intencoes_pendentes|length }} intenção(ões)</strong>.
+                </p>
+                <div class="alert alert-danger small mb-0">
+                    <i class="bi bi-shield-exclamation me-1"></i><strong>Consequências importantes:</strong>
+                    <ul class="mb-0 ps-3 mt-1">
+                        <li>As intenções <strong>NÃO serão impressas na folha oficial do Word</strong>.</li>
+                        <li>O valor (R$ {{ valor_total|floatformat:2 }}) <strong>NÃO será somado ao caixa da sessão</strong>.</li>
+                        <li>O lote ficará aguardando quitação no menu da missa para ser pago a qualquer momento.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continuar no Pagamento</button>
+                <a href="{% url 'salvar_lote_pendente' missa.id %}" class="btn btn-warning fw-bold">
+                    Sim, Salvar como Pendente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const valorTotal = parseFloat("{{ valor_total }}") || 0;
+    const selectForma = document.getElementById('id_forma');
+    const inputRecebido = document.getElementById('id_valor_recebido');
+    const inputDoacao = document.getElementById('id_doacao');
+    const inputNomePix = document.getElementById('id_nome_pix');
+
+    const campoDoacao = document.getElementById('campo-doacao');
+    const campoPix = document.getElementById('campo-pix');
+    const infoTrocoBruto = document.getElementById('info-troco-bruto');
+    const infoTrocoLiquido = document.getElementById('info-troco-liquido');
+
+    function atualizarVisibilidade() {
+        if (!selectForma) return;
+        const formaVal = selectForma.value.toLowerCase();
+        
+        if (formaVal === 'pix') {
+            campoPix.style.display = 'block';
+        } else {
+            campoPix.style.display = 'none';
+        }
+
+        const valorRecebido = parseFloat(inputRecebido.value) || 0;
+        if (valorRecebido > valorTotal) {
+            campoDoacao.style.display = 'block';
+            const trocoBruto = valorRecebido - valorTotal;
+            const doacaoVal = parseFloat(inputDoacao.value) || 0;
+            const trocoLiquido = Math.max(0, trocoBruto - doacaoVal);
+
+            infoTrocoBruto.innerText = `Sobra: R$ ${trocoBruto.toFixed(2)}`;
+            infoTrocoLiquido.innerText = `Troco final a devolver: R$ ${trocoLiquido.toFixed(2)}`;
+        } else {
+            campoDoacao.style.display = 'none';
+            if (inputDoacao) inputDoacao.value = '0.00';
+        }
+    }
+
+    if (selectForma) selectForma.addEventListener('change', atualizarVisibilidade);
+    if (inputRecebido) inputRecebido.addEventListener('input', atualizarVisibilidade);
+    if (inputDoacao) inputDoacao.addEventListener('input', atualizarVisibilidade);
+
+    document.addEventListener('DOMContentLoaded', atualizarVisibilidade);
+
+    function abrirAvisoPendente() {
+        const modal = new bootstrap.Modal(document.getElementById('modalAvisoPendente'));
+        modal.show();
+    }
+
+    function abrirConfirmacao() {
+        const formaVal = (selectForma.value || '').toLowerCase().trim();
+        if (!formaVal) {
+            alert('Atenção: É obrigatório selecionar a forma de pagamento (Dinheiro ou Pix)!');
+            selectForma.focus();
+            return;
+        }
+
+        const valorRecebido = parseFloat(inputRecebido.value) || 0;
+        if (valorRecebido < valorTotal) {
+            alert('Atenção: O valor recebido não pode ser menor do que o valor total das intenções (R$ ' + valorTotal.toFixed(2) + ')!');
+            inputRecebido.focus();
+            return;
+        }
+
+        if (formaVal === 'pix') {
+            const nomePix = (inputNomePix.value || '').trim();
+            if (!nomePix) {
+                alert('Atenção: É obrigatório informar o nome do responsável pelo Pix para conferência!');
+                inputNomePix.focus();
+                return;
+            }
+        }
+
+        const formaText = selectForma.options[selectForma.selectedIndex]?.text || '';
+        const doacao = parseFloat(inputDoacao.value) || 0;
+        const troco = Math.max(0, valorRecebido - valorTotal - doacao);
+
+        document.getElementById('conf-total').innerText = valorTotal.toFixed(2);
+        document.getElementById('conf-recebido').innerText = valorRecebido.toFixed(2);
+        document.getElementById('conf-troco').innerText = troco.toFixed(2);
+        document.getElementById('conf-doacao').innerText = doacao.toFixed(2);
+        document.getElementById('conf-forma').innerText = formaText;
+
+        if (formaVal === 'pix') {
+            document.getElementById('conf-pix-container').style.display = 'flex';
+            document.getElementById('conf-pix-nome').innerText = inputNomePix.value.trim();
+        } else {
+            document.getElementById('conf-pix-container').style.display = 'none';
+        }
+
+        document.getElementById('conf-doacao-row').style.display = doacao > 0 ? 'flex' : 'none';
+        document.getElementById('conf-troco-row').style.display = troco > 0 ? 'flex' : 'none';
+
+        const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
+        modal.show();
+    }
+
+    function submeterFormulario() {
+        const formaVal = (selectForma.value || '').toLowerCase().trim();
+        if (!formaVal) {
+            alert('Por favor, selecione a forma de pagamento.');
+            return;
+        }
+        if (formaVal === 'pix' && !(inputNomePix.value || '').trim()) {
+            alert('Por favor, informe o nome do responsável pelo Pix.');
+            return;
+        }
+        document.getElementById('form-pagamento').submit();
+    }
+</script>
+{% endblock %}

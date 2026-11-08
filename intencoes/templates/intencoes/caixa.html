@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Fechamento de Caixa - Missa {{ missa.data|date:"d/m/Y" }}{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <div class="mb-3">
+        <a href="{% url 'detalhes_missa' missa.id %}" class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para esta missa
+        </a>
+    </div>
+
+    <div class="card card-custom p-4 bg-white mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4 gap-2">
+            <div>
+                <span class="badge bg-primary mb-2">Relatório Financeiro &bull; Caixa</span>
+                <h3 class="fw-bold mb-1">
+                    <i class="bi bi-cash-stack text-success me-2"></i>Fechamento de Caixa e Auditoria
+                </h3>
+                <p class="text-muted small mb-0">Missa do dia {{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}h - Catedral do Divino Espírito Santo</p>
+            </div>
+            <!-- Botão Único 'Baixar' com Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-download me-1"></i> Baixar
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="min-width: 260px;">
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'caixa_missa' missa.id %}?exportar=txt">
+                            <i class="bi bi-filetype-txt text-primary fs-4 me-2"></i>
+                            <div>
+                                <strong class="d-block text-dark">Relatório de Caixa (.txt)</strong>
+                                <small class="text-muted">Espelho oficial paroquial</small>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_excel' missa.id %}">
+                            <i class="bi bi-file-earmark-excel-fill text-success fs-4 me-2"></i>
+                            <div>
+                                <strong class="d-block text-dark">Planilha Excel (.xlsx)</strong>
+                                <small class="text-muted">Intenções e fechamento de caixa</small>
+                            </div>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_pdf' missa.id %}">
+                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 me-2"></i>
+                            <div>
+                                <strong class="d-block text-dark">Documento PDF (.pdf)</strong>
+                                <small class="text-muted">Mesma formatação do Word</small>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_docx' missa.id %}">
+                            <i class="bi bi-file-earmark-word-fill text-primary fs-4 me-2"></i>
+                            <div>
+                                <strong class="d-block text-dark">Documento Word (.docx)</strong>
+                                <small class="text-muted">Folha oficial de leitura</small>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Cards de Resumo Financeiro -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-md-3">
+                <div class="p-3 bg-light rounded border text-center">
+                    <span class="text-muted small d-block">Total da Sessão (Balcão)</span>
+                    <strong class="fs-3 text-success">R$ {{ missa.total_sessao|floatformat:2 }}</strong>
+                    <small class="text-muted d-block">{{ missa.intencoes_sessao_count }} intenções</small>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="p-3 bg-light rounded border text-center">
+                    <span class="text-muted small d-block">Dinheiro em Caixa</span>
+                    <strong class="fs-3 text-primary">R$ {{ missa.total_dinheiro|floatformat:2 }}</strong>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="p-3 bg-light rounded border text-center">
+                    <span class="text-muted small d-block">Pix da Sessão</span>
+                    <strong class="fs-3 text-info">R$ {{ missa.total_pix|floatformat:2 }}</strong>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="p-3 bg-warning-subtle rounded border border-warning text-center">
+                    <span class="text-dark small d-block fw-semibold">Doações do Troco</span>
+                    <strong class="fs-3 text-dark">R$ {{ missa.total_doacao|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+
+        {% if missa.intencoes_secretaria_count > 0 %}
+            <div class="p-2 px-3 bg-secondary-subtle rounded border border-secondary mb-4 d-flex justify-content-between align-items-center">
+                <span class="small text-secondary-emphasis">
+                    <i class="bi bi-file-earmark-check me-1"></i><strong>Secretaria (Prévio DOCX):</strong> {{ missa.intencoes_secretaria_count }} intenções (R$ {{ missa.total_secretaria|floatformat:2 }})
+                </span>
+                <span class="badge bg-secondary">Total Geral: R$ {{ missa.total_arrecadado|floatformat:2 }}</span>
+            </div>
+        {% endif %}
+
+        <!-- Lotes com Pagamento Pendente (se houver) -->
+        {% if pagamentos_pendentes %}
+            <div class="alert alert-warning border border-warning mb-4">
+                <h6 class="fw-bold mb-2 text-dark">
+                    <i class="bi bi-clock-history me-1"></i>Lotes Aguardando Confirmação de Pagamento:
+                </h6>
+                <div class="list-group">
+                    {% for lote in pagamentos_pendentes %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 bg-white">
+                            <div>
+                                <strong>Lote #{{ lote.id }}:</strong>
+                                <span>{{ lote.intencoes_pagas.count }} intenção(ões) pendente(s)</span>
+                                <span class="text-muted small ms-2">
+                                    ({% for it in lote.intencoes_pagas.all %}{{ it.nome_intencao }}{% if not forloop.last %}, {% endif %}{% endfor %})
+                                </span>
+                            </div>
+                            <div>
+                                <span class="fw-bold text-dark me-2">R$ {{ lote.valor_total|floatformat:2 }}</span>
+                                <a href="{% url 'pagamento_lote' missa.id lote.id %}" class="btn btn-sm btn-success fw-bold">
+                                    Quitar
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Seção Conferência Pix (Equivalente ao antigo Lista_Pix.txt) -->
+        <div class="mb-4">
+            <h5 class="fw-bold text-dark mb-3">
+                <i class="bi bi-qr-code text-info me-2"></i>Conferência de Pagamentos via Pix (Confirmados)
+            </h5>
+            {% if pagamentos_pix %}
+                <div class="table-responsive">
+                    <table class="table table-hover border">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Nome do Pagador / Titular</th>
+                                <th>Valor do Pix</th>
+                                <th>Doação embutida</th>
+                                <th>Data / Horário de Quitação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pagamentos_pix %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td class="fw-bold">{{ p.nome_pix|default:"Não informado" }}</td>
+                                <td class="text-success fw-bold">R$ {{ p.valor_total|floatformat:2 }}</td>
+                                <td>{% if p.doacao > 0 %}R$ {{ p.doacao|floatformat:2 }}{% else %}-{% endif %}</td>
+                                <td class="text-muted small">
+                                    {% if p.pago_em %}
+                                        {{ p.pago_em|date:"d/m/Y H:i:s" }}
+                                    {% else %}
+                                        {{ p.criado_em|date:"d/m/Y H:i:s" }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-light border text-muted">
+                    Nenhum pagamento via Pix registrado para esta missa até o momento.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Trilha de Auditoria (Histórico em Tempo Real de Marcações e Quitações) -->
+        <div class="mb-4">
+            <h5 class="fw-bold text-dark mb-3">
+                <i class="bi bi-journal-text text-primary me-2"></i>Trilha de Auditoria do Caixa (Registro de Atividades)
+            </h5>
+            {% if registros_auditoria %}
+                <ul class="list-group list-group-flush border rounded">
+                    {% for reg in registros_auditoria %}
+                        <li class="list-group-item py-2 px-3 d-flex align-items-center">
+                            <span class="badge bg-light text-dark border me-3 small font-monospace">
+                                {{ reg.criado_em|date:"d/m/Y H:i:s" }}
+                            </span>
+                            <span class="{% if 'CONFIRMADO' in reg.texto %}text-success fw-semibold{% elif 'PENDENTE' in reg.texto %}text-warning-emphasis{% else %}text-dark{% endif %}">
+                                {{ reg.texto }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="alert alert-light border text-muted">
+                    Nenhum evento registrado na auditoria ainda.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Seção Histórico Geral de Pagamentos Confirmados -->
+        <div>
+            <h5 class="fw-bold text-dark mb-3">
+                <i class="bi bi-receipt text-secondary me-2"></i>Histórico Completo de Transações Quitadas
+            </h5>
+            {% if pagamentos %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover border">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Lote</th>
+                                <th>Forma</th>
+                                <th>Valor Total</th>
+                                <th>Valor Recebido</th>
+                                <th>Doação</th>
+                                <th>Troco</th>
+                                <th>Horário Quitação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pagamentos %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><span class="badge bg-light text-dark border">#{{ p.id }}</span></td>
+                                <td>
+                                    <span class="badge {% if p.forma == 'pix' %}bg-info text-dark{% elif p.forma == 'secretaria' %}bg-secondary{% else %}bg-primary{% endif %} text-uppercase">
+                                        {{ p.get_forma_display }}
+                                    </span>
+                                </td>
+                                <td class="fw-bold">R$ {{ p.valor_total|floatformat:2 }}</td>
+                                <td>R$ {{ p.valor_recebido|floatformat:2 }}</td>
+                                <td class="text-success">{% if p.doacao > 0 %}R$ {{ p.doacao|floatformat:2 }}{% else %}R$ 0,00{% endif %}</td>
+                                <td class="text-muted">R$ {{ p.troco|floatformat:2 }}</td>
+                                <td class="text-muted small">
+                                    {% if p.pago_em %}
+                                        {{ p.pago_em|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        {{ p.criado_em|date:"d/m/Y H:i" }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-light border text-muted">
+                    Nenhum pagamento confirmado nesta missa ainda.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

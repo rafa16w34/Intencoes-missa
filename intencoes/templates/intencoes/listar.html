@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block title %}Missas e Intenções - Catedral Divino Espírito Santo{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Painel de Intenções de Missa</h2>
+            <p class="text-muted mb-0">Gerencie celebrações, marque intenções e gere as folhas oficiais da paróquia.</p>
+        </div>
+        <a href="{% url 'criar_missa' %}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-calendar-plus me-1"></i> + Nova Missa
+        </a>
+    </div>
+
+    {% if lista_missas %}
+        <!-- Navegação por Abas das Missas -->
+        <ul class="nav nav-pills mb-3 bg-white p-2 rounded shadow-sm border" id="missasTab" role="tablist">
+            {% for missa in lista_missas %}
+                <li class="nav-item me-1" role="presentation">
+                    <button class="nav-link {% if missa_ativa_id == missa.id or not missa_ativa_id and forloop.first %}active{% endif %}"
+                            id="tab-btn-{{ missa.id }}"
+                            data-bs-toggle="tab"
+                            data-bs-target="#missa-tab-{{ missa.id }}"
+                            type="button"
+                            role="tab">
+                        <i class="bi bi-clock me-1"></i>
+                        <strong>{{ missa.data|date:"d/m/Y" }}</strong> - {{ missa.horario|time:"H:i" }}h
+                        <span class="badge bg-light text-dark ms-1">{{ missa.intencoes.count }}</span>
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Conteúdo de Cada Missa -->
+        <div class="tab-content" id="missasTabContent">
+            {% for missa in lista_missas %}
+                <div class="tab-pane fade {% if missa_ativa_id == missa.id or not missa_ativa_id and forloop.first %}show active{% endif %}"
+                     id="missa-tab-{{ missa.id }}"
+                     role="tabpanel">
+
+                    <!-- Card da Missa -->
+                    <div class="card card-custom p-4 bg-white mb-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
+                            <div>
+                                <h4 class="fw-bold text-primary mb-1">
+                                    <i class="bi bi-geo-alt-fill me-1"></i>
+                                    Missa de {{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}h
+                                </h4>
+                                <span class="text-muted small">Catedral do Divino Espírito Santo</span>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="{% url 'cadastrar_intencao' missa.id %}" class="btn btn-success shadow-sm">
+                                    <i class="bi bi-person-plus-fill me-1"></i> Marcar Intenção
+                                </a>
+                                <div class="dropdown">
+                                    <button class="btn btn-primary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-download me-1"></i> Baixar
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="min-width: 240px;">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_docx' missa.id %}">
+                                                <i class="bi bi-file-earmark-word-fill text-primary fs-5 me-2"></i>
+                                                <span>Documento Word (.docx)</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_pdf' missa.id %}">
+                                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-5 me-2"></i>
+                                                <span>Documento PDF (.pdf)</span>
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_excel' missa.id %}">
+                                                <i class="bi bi-file-earmark-excel-fill text-success fs-5 me-2"></i>
+                                                <span>Planilha Excel (.xlsx)</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <a href="{% url 'caixa_missa' missa.id %}" class="btn btn-outline-secondary shadow-sm">
+                                    <i class="bi bi-cash-stack me-1"></i> Caixa & Pix
+                                </a>
+                                <a href="{% url 'importar_docx' missa.id %}" class="btn btn-outline-dark shadow-sm">
+                                    <i class="bi bi-upload me-1"></i> Importar Word
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Resumo Financeiro da Missa -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="p-3 bg-light rounded text-center border">
+                                    <span class="text-muted small d-block">Total de Intenções</span>
+                                    <strong class="fs-4 text-dark">{{ missa.intencoes.count }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-3 bg-light rounded text-center border">
+                                    <span class="text-muted small d-block">Total Arrecadado</span>
+                                    <strong class="fs-4 text-success">R$ {{ missa.total_arrecadado|floatformat:2 }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-3 bg-light rounded text-center border">
+                                    <span class="text-muted small d-block">Em Dinheiro</span>
+                                    <strong class="fs-4 text-primary">R$ {{ missa.total_dinheiro|floatformat:2 }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-3 bg-light rounded text-center border">
+                                    <span class="text-muted small d-block">Em Pix (+ Doações)</span>
+                                    <strong class="fs-4 text-info">R$ {{ missa.total_pix|floatformat:2 }}</strong>
+                                    {% if missa.total_doacao > 0 %}
+                                        <small class="text-muted d-block">(R$ {{ missa.total_doacao|floatformat:2 }} doado)</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Intenções da Missa -->
+                        {% if missa.intencoes.all %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle border">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 50px;">#</th>
+                                            <th>Nome / Intenção</th>
+                                            <th>Tipo Litúrgico</th>
+                                            <th>Pagamento</th>
+                                            <th style="width: 140px;" class="text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in missa.intencoes.all %}
+                                        <tr>
+                                            <td class="text-muted">{{ forloop.counter }}</td>
+                                            <td class="fw-semibold text-dark">{{ item.nome_intencao }}</td>
+                                            <td>
+                                                <span class="badge badge-categoria
+                                                    {% if item.tipo == 'falecido' %}bg-dark
+                                                    {% elif item.tipo == 'acao_gracas' %}bg-success
+                                                    {% elif item.tipo == 'saude' %}bg-info text-dark
+                                                    {% elif item.tipo == 'niver' %}bg-warning text-dark
+                                                    {% elif item.tipo == 'setimo' %}bg-danger
+                                                    {% elif item.tipo == 'casamento' %}bg-primary
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ item.get_tipo_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if item.pagamento %}
+                                                    {% if item.pagamento.forma == 'secretaria' %}
+                                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary">
+                                                            <i class="bi bi-file-earmark-check me-1"></i>Secretaria (Docx)
+                                                        </span>
+                                                    {% elif item.pagamento.forma == 'pix' %}
+                                                        <span class="badge bg-info-subtle text-info-emphasis border border-info">
+                                                            <i class="bi bi-qr-code me-1"></i>Pix ({{ item.pagamento.nome_pix|truncatechars:15 }})
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-success-subtle text-success border border-success">
+                                                            <i class="bi bi-cash me-1"></i>Dinheiro
+                                                        </span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-warning-subtle text-dark border border-warning">
+                                                        <i class="bi bi-clock me-1"></i>Pendente
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'editar_intencao' item.id %}" class="btn btn-outline-secondary" title="Editar intenção">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="{% url 'excluir_intencao' item.id %}" class="btn btn-outline-danger" title="Excluir intenção">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-light border text-center py-5">
+                                <i class="bi bi-journal-x fs-1 text-muted d-block mb-2"></i>
+                                <h5 class="fw-bold">Nenhuma intenção cadastrada nesta missa ainda.</h5>
+                                <p class="text-muted mb-3">Clique no botão abaixo para começar a marcar para os fiéis.</p>
+                                <a href="{% url 'cadastrar_intencao' missa.id %}" class="btn btn-success">
+                                    <i class="bi bi-person-plus-fill me-1"></i> Marcar Primeira Intenção
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card card-custom p-5 text-center bg-white">
+            <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
+            <h4 class="fw-bold">Nenhuma missa cadastrada no momento</h4>
+            <p class="text-muted">Cadastre os horários das celebrações para começar a registrar intenções.</p>
+            <div class="mt-3">
+                <a href="{% url 'criar_missa' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle me-1"></i> Cadastrar Primeira Missa
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
