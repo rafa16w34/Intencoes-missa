@@ -1,78 +1,105 @@
-# Intenções de Missa
+# Sistema de Intenções de Missa — Catedral do Divino Espírito Santo
 
-Este repositório contém um sistema em **Python** desenvolvido por mim (Rafael Alves Faria), para
-auxiliar na marcação, organização e impressão das intenções de Missa na
-**Catedral do Divino Espírito Santo -- Divinópolis/MG**.
+Sistema web desenvolvido em **Django / Python** para auxílio no atendimento de balcão, registro, conferência financeira e impressão litúrgica das intenções de Missa da **Catedral do Divino Espírito Santo (Divinópolis/MG)**.
 
-O programa permite: 
-- Cadastro de intenções para todas as categorias;
-- Controle de valores pagos e recebidos (Dinheiro ou Pix);
-- Cria um arquivo txt com o nome do pagador e do valor total do pix;
-- Edição e exclusão de intenções já marcadas;
-- Importação de intenções a partir de um arquivo `.docx`
-- Exportação automática para uma planilha Excel formatada (`Intenções.xlsx`) -
-- Organização automática das categorias
+---
 
-## Estrutura do Projeto
+## Principais Funcionalidades
 
-    IntencoesMissa/
-    │── src/
-    │   └── main.py
-    |
-    │── input/
-    │   └── intencoes.docx (Arquivo docx das intenções marcadas anteriormente)
-    |
-    │── output/
-    │   └── Lista_Pix.txt (gerado automaticamente)
-    │   └── Intenções.xlsx (gerado automaticamente)
-    |
-    │── requirements.txt (requisitos do ambiente virtual)
-    │── README.md
-    ├── LICENSE
-    ├── .gitignore
-    ├── .gitattributes
+- **Painel de Celebrações com Timers Coloridos**:
+  - Visualização em cards sequenciais por data e horário;
+  - **Verde**: Faltam mais de 24 horas;
+  - **Amarelo**: Faltam poucas horas para a celebração;
+  - **Vermelho**: Faltam 10 minutos para o horário marcado;
+  - **Cinza**: Missa já ocorrida (bloqueio automático de novas marcações após 3 horas).
+- **Menu Lateral Retrátil (Offcanvas)**:
+  - Navegação prática acionada pelo botão no canto superior esquerdo.
+- **Agrupamento Litúrgico com Dropdowns**:
+  - Organização das intenções em abas/dropdowns (Honra e Louvor, Aniversários, Casamentos, Ação de Graças, Intenções Particulares, Recuperação de Saúde, 7º Dia e Irmãos Falecidos).
+- **Atendimento por Fiel e Controle de Pagamentos**:
+  - Todas as intenções de uma mesma pessoa são amarradas a um único lote de pagamento;
+  - Suporte a Dinheiro, Pix (com formatação automática de inicial maiúscula) e Doações do troco;
+  - **Tratamento de Pagamentos Pendentes**: Intenções suspensas não são somadas ao caixa e não são impressas na folha do celebrante até a quitação definitiva em lote.
+- **Exportação Integrada (Botão "Baixar")**:
+  - **Word (`.docx`)**: Folha oficial diagramada no padrão da diocese com brasões e cabeçalho;
+  - **PDF (`.pdf`)**: Conversão fiel via LibreOffice, com mesma formatação e pronta para impressão;
+  - **Excel (`.xlsx`)**: Planilha formatada em duas abas (Intenções em 4 colunas + Fechamento de Caixa);
+  - **Texto (`.txt`)**: Espelho de auditoria paroquial do caixa (`Registro_Caixa.txt`).
+- **Importação Inteligente de DOCX da Secretaria**:
+  - Identifica data e horário automaticamente;
+  - Reconhece o asterisco (`*`) para distinguir intenções da secretaria das intenções marcadas na sessão.
 
+---
 
-## Requisitos do sistema:
+## Estrutura do Repositório
 
-- Bibliotecas usadas e versão do Python necessária:
-
-    ```
-    python 3.10 ou superior
-    et_xmlfile==2.0.0
-    lxml==6.0.2
-    openpyxl==3.1.5
-    python-docx==1.2.0
-    typing_extensions==4.15.0
-    ```
-    
-
-- Instalação das Dependências
-
-Para instalar tudo automaticamente:
-```pip install -r requirements.txt```
-
-## Como configurar o Ambiente Virtual (venv)
-
-Para configurar o ambiente automaticamente, execute o script correspondente ao seu sistema operacional.
-
-### Linux / macOS:
-```
-./setup.sh
-```
-
-### Windows (`setup.bat`)
-```
-setup.bat
+```text
+Intencoes-missa/
+│── core/                      # Configurações centrais do Django (settings, urls, wsgi)
+│── intencoes/                 # App principal de intenções
+│   ├── templates/intencoes/   # Telas HTML (painel, detalhes, cadastro, pagamento, caixa)
+│   ├── migrations/            # Migrações do banco de dados SQLite
+│   ├── docx_generator.py      # Gerador oficial da folha Word (.docx)
+│   ├── pdf_generator.py       # Gerador idêntico em PDF (.pdf)
+│   ├── excel_generator.py     # Gerador da planilha com abas de intenções e caixa (.xlsx)
+│   ├── docx_importer.py       # Leitor e importador de intenções (.docx)
+│   ├── models.py              # Modelos: Missa, IntencaoMissa, Pagamento, RegistroCaixa
+│   ├── forms.py               # Formulários validados
+│   └── views.py               # Lógica de controle e regras de negócio
+│── static/                    # Arquivos estáticos (brasões da diocese e catedral)
+│   └── img/
+│── templates/                 # Template base compartilhado (base.html)
+│── scripts/                   # Scripts de inicialização e bancos de teste
+│   ├── iniciar_oficial.sh / .bat
+│   ├── iniciar_teste.sh / .bat
+│   └── zerar_banco_teste.sh / .bat
+│── exemplo/                   # Arquivo docx de exemplo para importação
+│── terminal_legado/           # Versão histórica original que operava via terminal (CLI)
+│── iniciar.sh / iniciar.bat   # Atalhos rápidos na raiz para execução
+│── db.sqlite3                 # Banco de dados SQLite oficial
+│── manage.py                  # CLI do Django
+│── requirements.txt           # Dependências do projeto
+└── README.md
 ```
 
-### AVISOS IMPORTANTES:
+---
 
-- Para fazer a leitura do arquivo docx, o mesmo precisa estar nomeado como ```intencoes.docx```;
-- Caso o arquivo docx esteja mal configurado a planilha pode ficar desestruturada;
-- É importante verificar a planilha para corrigir possíveis erros, no caso de uma formatação ruim do arquivo docx original;
-- A planilha deve ser reconfigurada para que a impressão ocorra corretamente (Ex: Tamanho das colunas e bordas);
+## Como Executar
 
-### FUTURAS IMPLEMENTAÇÕES:
+### 1. Pré-requisitos
+- Python 3.10 ou superior
+- LibreOffice (necessário para a conversão idêntica em PDF)
 
-- Uma interface gráfica, ao invés de usar pelo terminal, para que esteja mais acessível para pessoas leigas;
+### 2. Instalação das Dependências
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Iniciar o Sistema
+
+#### No Linux / macOS:
+```bash
+./iniciar.sh
+```
+*(ou `./scripts/iniciar_oficial.sh`)*
+
+#### No Windows:
+Basta dar dois cliques em **`iniciar.bat`** na raiz do projeto *(ou `scripts\iniciar_oficial.bat`)*.
+
+O sistema abrirá no endereço local: **`http://127.0.0.1:8000/`**.
+
+---
+
+## Modo de Testes (Ambiente Seguro)
+Para treinar atendentes ou realizar testes sem alterar os dados oficiais da paróquia:
+- **Linux**: `./scripts/iniciar_teste.sh`
+- **Windows**: `scripts\iniciar_teste.bat`
+- **Para limpar o banco de testes**: `./scripts/zerar_banco_teste.sh` ou `scripts\zerar_banco_teste.bat`.
+
+---
+
+## Testes Automatizados
+O projeto conta com suíte de testes unitários cobrindo regras financeiras, timers, lotes pendentes e exportações:
+```bash
+python manage.py test
+```

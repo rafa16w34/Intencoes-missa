@@ -1,46 +1,165 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Cadastrar Intenção</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
-<body class="container mt-4">
+{% extends 'base.html' %}
 
-    <p class="text-muted mb-1">
-        Missa: <strong>{{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}h</strong>
-    </p>
-    <h2>Marcar Intenção</h2>
+{% block title %}Marcar Intenção - Catedral Divino Espírito Santo{% endblock %}
 
-    <form method="post" class="mb-4">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary">Adicionar e marcar outra</button>
-        <a href="{% url 'listar_intencoes' %}" class="btn btn-secondary">Cancelar / voltar depois</a>
-    </form>
-
-    {% if intencoes_pendentes %}
-        <hr>
-        <h5>Intenções marcadas nesta rodada ({{ intencoes_pendentes|length }})</h5>
-        <ul class="list-group mb-3">
-            {% for item in intencoes_pendentes %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    {{ item.nome_intencao }}
-                    <span class="badge bg-secondary">{{ item.get_tipo_display }}</span>
-                </li>
-            {% endfor %}
-        </ul>
-
-        <div class="alert alert-info d-flex justify-content-between align-items-center">
-            <span>
-                {{ intencoes_pendentes|length }} intenção(ões) x R$ {{ valor_unitario }} =
-                <strong>R$ {{ valor_total }}</strong>
-            </span>
-            <a href="{% url 'pagamento' missa.id %}" class="btn btn-success">
-                Finalizar e ir para pagamento →
+{% block content %}
+<div class="container pb-5">
+    <!-- Navegação de Retorno Controlada -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        {% if intencoes_pendentes %}
+            <button type="button" class="btn btn-link text-decoration-none text-muted p-0" onclick="confirmarSaida()">
+                <i class="bi bi-arrow-left me-1"></i> Voltar para esta missa
+            </button>
+        {% else %}
+            <a href="{% url 'detalhes_missa' missa.id %}" class="text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i> Voltar para esta missa
             </a>
-        </div>
-    {% endif %}
+        {% endif %}
+        <span class="badge bg-light text-secondary border">Atendimento Individual</span>
+    </div>
 
-</body>
-</html>
+    <div class="row g-4">
+        <!-- Formulário de Cadastro da Intenção -->
+        <div class="col-lg-7">
+            <div class="card card-custom p-4 bg-white h-100">
+                <div class="border-bottom pb-3 mb-3">
+                    <span class="badge bg-primary mb-2">Missa: {{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}h</span>
+                    <h3 class="fw-bold mb-0">Marcar Nova Intenção</h3>
+                    <p class="text-muted small mb-0">Digite os dados da intenção e adicione à rodada desta pessoa.</p>
+                </div>
+
+                <form method="POST" id="form-cadastrar">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_tipo" class="form-label fw-semibold">Tipo de Intenção Litúrgica:</label>
+                        {{ form.tipo }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="id_nome_intencao" class="form-label fw-semibold">Nome da Pessoa ou Descrição da Intenção:</label>
+                        {{ form.nome_intencao }}
+                        <div class="form-text">Ex: Nome do falecido, do aniversariante ou motivo da ação de graças.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1 shadow-sm">
+                            <i class="bi bi-plus-circle me-1"></i> Adicionar e Continuar Marcando
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Painel da Rodada Atual / Cobrança -->
+        <div class="col-lg-5">
+            <div class="card card-custom p-4 bg-white h-100 border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-basket3-fill text-primary me-2"></i>Rodada Deste Fiel
+                    </h5>
+                    <span class="badge bg-secondary">{{ intencoes_pendentes|length }} intenção(ões)</span>
+                </div>
+
+                {% if intencoes_pendentes %}
+                    <div class="alert alert-primary py-2 px-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Total Parcial:</span>
+                            <span class="fs-4 fw-bold">R$ {{ valor_total|floatformat:2 }}</span>
+                        </div>
+                        <small class="text-muted">{{ intencoes_pendentes|length }} x R$ {{ valor_unitario|floatformat:2 }}</small>
+                    </div>
+
+                    <p class="small text-muted mb-2">Intenções adicionadas para esta pessoa:</p>
+                    <ul class="list-group mb-4" style="max-height: 250px; overflow-y: auto;">
+                        {% for item in intencoes_pendentes %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <strong class="d-block text-dark">{{ item.nome_intencao }}</strong>
+                                    <small class="text-muted">{{ item.get_tipo_display }}</small>
+                                </div>
+                                <a href="{% url 'remover_intencao_pendente' missa.id item.id %}"
+                                   class="btn btn-outline-danger btn-sm border-0 py-0 px-2"
+                                   title="Remover desta rodada">
+                                    <i class="bi bi-x-circle-fill fs-5"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="d-grid gap-2">
+                        <!-- 1. Botão Principal: Ir para Pagamento -->
+                        <a href="{% url 'pagamento_lote' missa.id lote.id %}" class="btn btn-success btn-lg shadow-sm">
+                            <i class="bi bi-cash-coin me-1"></i> Ir para Pagamento (R$ {{ valor_total|floatformat:2 }}) →
+                        </a>
+
+                        <!-- 2. Botão de Suspensão com Aviso Claro -->
+                        <button type="button" class="btn btn-outline-warning text-dark" onclick="abrirAvisoPendente()">
+                            <i class="bi bi-pause-circle me-1"></i> Salvar como Pagamento Pendente
+                        </button>
+
+                        <!-- 3. Botão de Cancelamento / Descarte -->
+                        <a href="{% url 'cancelar_rodada' missa.id %}"
+                           class="btn btn-outline-danger btn-sm"
+                           onclick="return confirm('Deseja realmente cancelar? Todas as intenções desta rodada serão excluídas.');">
+                            <i class="bi bi-trash me-1"></i> Descartar esta rodada
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted my-auto">
+                        <i class="bi bi-journal-plus fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        <p class="mb-0">Nenhuma intenção marcada nesta rodada ainda.</p>
+                        <small>Preencha os dados ao lado para começar.</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Alerta ao Deixar Pendente -->
+<div class="modal fade" id="modalAvisoPendente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Aviso Importante: Pagamento Pendente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    Você está prestes a suspender o atendimento desta pessoa e salvar o lote de
+                    <strong>{{ intencoes_pendentes|length }} intenção(ões)</strong> com <strong>PAGAMENTO PENDENTE</strong>.
+                </p>
+                <div class="alert alert-danger small mb-0">
+                    <i class="bi bi-shield-exclamation me-1"></i><strong>Atenção às regras litúrgicas e de caixa:</strong>
+                    <ul class="mb-0 ps-3 mt-1">
+                        <li>Estas intenções <strong>NÃO serão impressas na folha oficial do Word (.docx)</strong> até que o pagamento seja quitado.</li>
+                        <li>O valor (R$ {{ valor_total|floatformat:2 }}) <strong>NÃO será somado ao total do caixa da sessão</strong>.</li>
+                        <li>O lote ficará aguardando quitação no menu da missa para ser pago integralmente a qualquer momento.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continuar Marcando</button>
+                <a href="{% url 'salvar_lote_pendente' missa.id %}" class="btn btn-warning fw-bold">
+                    Sim, Salvar como Pendente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function abrirAvisoPendente() {
+        const modal = new bootstrap.Modal(document.getElementById('modalAvisoPendente'));
+        modal.show();
+    }
+
+    function confirmarSaida() {
+        abrirAvisoPendente();
+    }
+</script>
+{% endblock %}

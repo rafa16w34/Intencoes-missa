@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Painel de Missas - Catedral Divino Espírito Santo{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <!-- Cabeçalho do Painel -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Painel de Celebrações
+            </h2>
+            <p class="text-muted mb-0">Selecione uma missa para gerenciar suas intenções, visualizar o caixa ou baixar a folha de leitura.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'criar_missa' %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Nova Missa
+            </a>
+            <a href="{% url 'importar_docx_geral' %}" class="btn btn-outline-dark shadow-sm">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i> Importar DOCX
+            </a>
+        </div>
+    </div>
+
+    <!-- Legenda dos Timers Coloridos -->
+    <div class="card card-custom p-3 bg-white mb-4 border">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small">
+            <span class="fw-bold text-secondary">
+                <i class="bi bi-stopwatch me-1"></i>Indicador de Proximidade:
+            </span>
+            <div class="d-flex flex-wrap gap-3">
+                <span class="d-flex align-items-center">
+                    <span class="badge bg-success rounded-circle p-1 me-1" style="width: 12px; height: 12px;"> </span>
+                    <strong>Verde:</strong>&nbsp;Mais de 1 dia restante
+                </span>
+                <span class="d-flex align-items-center">
+                    <span class="badge bg-warning rounded-circle p-1 me-1" style="width: 12px; height: 12px;"> </span>
+                    <strong>Amarelo:</strong>&nbsp;Faltam horas (&lt; 24h)
+                </span>
+                <span class="d-flex align-items-center">
+                    <span class="badge bg-danger rounded-circle p-1 me-1" style="width: 12px; height: 12px;"> </span>
+                    <strong>Vermelho:</strong>&nbsp;Faltam 10 min ou menos (Imprimir!)
+                </span>
+                <span class="d-flex align-items-center">
+                    <span class="badge bg-secondary rounded-circle p-1 me-1" style="width: 12px; height: 12px;"> </span>
+                    <strong>Cinza:</strong>&nbsp;Já iniciada / Encerrada (+3h)
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {% if lista_missas %}
+        <!-- Grid de Cards ("Quadrados em Sequência") -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for missa in lista_missas %}
+                {% with timer=missa.status_timer %}
+                <div class="col">
+                    <div class="card card-custom h-100 bg-white border-top border-4 {{ timer.border_class }} shadow-sm transition-card">
+                        <div class="card-body p-4 d-flex flex-column">
+
+                            <!-- Cabeçalho do Card: Data e Badge de Status -->
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <span class="text-uppercase fw-bold text-muted small d-block">
+                                        {{ missa.data|date:"l" }}
+                                    </span>
+                                    <h5 class="fw-bold text-dark mb-0">
+                                        {{ missa.data|date:"d/m/Y" }}
+                                    </h5>
+                                </div>
+                                <span class="badge {{ timer.badge_class }} px-2 py-1 small shadow-sm">
+                                    <i class="bi bi-clock me-1"></i>{{ timer.texto }}
+                                </span>
+                            </div>
+
+                            <!-- Horário em Destaque -->
+                            <div class="bg-light p-3 rounded text-center mb-3 border">
+                                <span class="text-muted small d-block">Horário da Celebração</span>
+                                <h2 class="fw-bold mb-0 {% if timer.cor == 'vermelho' %}text-danger{% elif timer.cor == 'amarelo' %}text-warning-emphasis{% elif timer.cor == 'verde' %}text-success{% else %}text-secondary{% endif %}">
+                                    <i class="bi bi-bell-fill me-1 fs-3"></i>{{ missa.horario|time:"H:i" }}h
+                                </h2>
+                            </div>
+
+                            <!-- Métricas Rápidas: Intenções da Sessão e Caixa da Sessão -->
+                            <div class="row g-2 text-center mb-4 mt-auto">
+                                <div class="col-6">
+                                    <div class="p-2 border rounded bg-light">
+                                        <small class="text-muted d-block">Intenções Sessão</small>
+                                        <strong class="fs-5 text-dark">{{ missa.intencoes_sessao_count }}</strong>
+                                        {% if missa.intencoes_secretaria_count > 0 %}
+                                            <span class="d-block small text-muted">(+{{ missa.intencoes_secretaria_count }} sec.)</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 border rounded bg-light">
+                                        <small class="text-muted d-block">Caixa Sessão</small>
+                                        <strong class="fs-5 text-success">R$ {{ missa.total_sessao|floatformat:2 }}</strong>
+                                        {% if missa.total_secretaria > 0 %}
+                                            <span class="d-block small text-muted">(R$ {{ missa.total_secretaria|floatformat:0 }} sec.)</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Aviso se a missa já passou de 3 horas -->
+                            {% if missa.esta_bloqueada %}
+                                <div class="alert alert-secondary py-1 px-2 small text-center mb-3">
+                                    <i class="bi bi-lock-fill me-1"></i>Modo Somente Leitura (+3h)
+                                </div>
+                            {% endif %}
+
+                            <!-- Botão de Abertura da Missa -->
+                            <div class="d-grid mt-auto">
+                                <a href="{% url 'detalhes_missa' missa.id %}"
+                                   class="btn {% if timer.cor == 'vermelho' %}btn-danger{% elif missa.esta_bloqueada %}btn-outline-secondary{% else %}btn-primary{% endif %} btn-lg fw-semibold shadow-sm">
+                                    {% if missa.esta_bloqueada %}
+                                        <i class="bi bi-eye-fill me-1"></i> Visualizar Intenções →
+                                    {% else %}
+                                        <i class="bi bi-pencil-square me-1"></i> Abrir Missa →
+                                    {% endif %}
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Estado Vazio -->
+        <div class="card card-custom p-5 text-center bg-white border">
+            <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
+            <h4 class="fw-bold">Nenhuma missa cadastrada</h4>
+            <p class="text-muted">Cadastre as celebrações da semana ou importe um arquivo Word da secretaria.</p>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <a href="{% url 'criar_missa' %}" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Cadastrar Nova Missa
+                </a>
+                <a href="{% url 'importar_docx_geral' %}" class="btn btn-outline-dark btn-lg shadow-sm">
+                    <i class="bi bi-file-earmark-arrow-up me-1"></i> Importar DOCX
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

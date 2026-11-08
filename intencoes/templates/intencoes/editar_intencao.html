@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Intenção - Catedral Divino Espírito Santo{% endblock %}
+
+{% block content %}
+<div class="container pb-5" style="max-width: 600px;">
+    <div class="mb-3">
+        <a href="{% url 'detalhes_missa' missa.id %}" class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para a missa
+        </a>
+    </div>
+
+    <div class="card card-custom p-4 bg-white">
+        <div class="border-bottom pb-3 mb-4">
+            <span class="badge bg-primary mb-2">Missa: {{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}h</span>
+            <h3 class="fw-bold mb-1">Editar Intenção</h3>
+            <p class="text-muted small mb-0">Altere o nome ou o tipo litúrgico da intenção.</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_tipo" class="form-label fw-semibold">Tipo de Intenção Litúrgica:</label>
+                {{ form.tipo }}
+            </div>
+
+            <div class="mb-4">
+                <label for="id_nome_intencao" class="form-label fw-semibold">Nome ou Descrição:</label>
+                {{ form.nome_intencao }}
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1 shadow-sm">
+                    <i class="bi bi-check2-circle me-1"></i> Salvar Alterações
+                </button>
+                <a href="{% url 'detalhes_missa' missa.id %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+
+{% block title %}Missa de {{ missa.data|date:"d/m/Y" }} às {{ missa.horario|time:"H:i" }}h - Catedral Divino Espírito Santo{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+
+    <!-- Navegação de Retorno ao Painel Principal -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{% url 'painel_missas' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> ← Voltar ao Painel de Missas
+        </a>
+        <span class="text-muted small">Catedral do Divino Espírito Santo &bull; Divinópolis/MG</span>
+    </div>
+
+    <!-- Banner se a Missa estiver Encerrada (+3h) -->
+    {% if missa.esta_bloqueada %}
+        <div class="alert alert-warning border border-warning shadow-sm d-flex align-items-center p-3 mb-4" role="alert">
+            <i class="bi bi-lock-fill fs-2 text-warning-emphasis me-3"></i>
+            <div>
+                <h5 class="fw-bold mb-1 text-warning-emphasis">Modo Somente Leitura (Celebração Encerrada)</h5>
+                <p class="mb-0 small text-dark">
+                    Já se passaram mais de 3 horas do horário desta missa. Para garantir a segurança dos registros contábeis e litúrgicos,
+                    <strong>novas intenções, edições e exclusões foram bloqueadas</strong>.
+                    Você ainda pode consultar o caixa e fazer o download da folha oficial em Word a qualquer momento.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Card Principal da Missa -->
+    <div class="card card-custom p-4 bg-white mb-4">
+
+        <!-- Topo: Título da Missa e Botões de Ação -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4 gap-2">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="text-uppercase fw-bold text-muted small">{{ missa.data|date:"l" }}</span>
+                    {% with timer=missa.status_timer %}
+                        <span class="badge {{ timer.badge_class }} small">
+                            <i class="bi bi-clock me-1"></i>{{ timer.texto }}
+                        </span>
+                    {% endwith %}
+                </div>
+                <h3 class="fw-bold text-primary mb-0">
+                    <i class="bi bi-calendar-check-fill me-2"></i>
+                    {{ missa.data|date:"d/m/Y" }} &bull; {{ missa.horario|time:"H:i" }}h
+                </h3>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                {% if not missa.esta_bloqueada %}
+                    <a href="{% url 'cadastrar_intencao' missa.id %}" class="btn btn-success shadow-sm">
+                        <i class="bi bi-person-plus-fill me-1"></i> Marcar Intenção
+                    </a>
+                {% endif %}
+                <!-- Botão Único 'Baixar' com Dropdown (Word, PDF, Planilha) -->
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-download me-1"></i> Baixar
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="min-width: 260px;">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_docx' missa.id %}">
+                                <i class="bi bi-file-earmark-word-fill text-primary fs-4 me-2"></i>
+                                <div>
+                                    <strong class="d-block text-dark">Documento Word (.docx)</strong>
+                                    <small class="text-muted">Folha oficial de leitura</small>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_pdf' missa.id %}">
+                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 me-2"></i>
+                                <div>
+                                    <strong class="d-block text-dark">Documento PDF (.pdf)</strong>
+                                    <small class="text-muted">Mesma formatação do Word</small>
+                                </div>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'baixar_excel' missa.id %}">
+                                <i class="bi bi-file-earmark-excel-fill text-success fs-4 me-2"></i>
+                                <div>
+                                    <strong class="d-block text-dark">Planilha Excel (.xlsx)</strong>
+                                    <small class="text-muted">Intenções e fechamento de caixa</small>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <a href="{% url 'caixa_missa' missa.id %}" class="btn btn-outline-secondary shadow-sm">
+                    <i class="bi bi-cash-stack me-1"></i> Caixa & Pix
+                </a>
+                {% if not missa.esta_bloqueada %}
+                    <a href="{% url 'importar_docx' missa.id %}" class="btn btn-outline-dark shadow-sm">
+                        <i class="bi bi-upload me-1"></i> Importar Word
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ALERTA DE LOTES COM PAGAMENTO PENDENTE (SE HOUVER) -->
+        {% if lotes_pendentes %}
+            <div class="alert alert-warning border border-warning shadow-sm mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-5 align-middle"></i>
+                        Atenção: {{ lotes_pendentes|length }} Lote(s) com Pagamento Pendente ({{ missa.intencoes_pendentes_count }} intenção(ões))
+                    </h6>
+                    <span class="badge bg-danger">Intenções retidas do Word até quitação</span>
+                </div>
+                <p class="small text-muted mb-2">
+                    Cada lote agrupa todas as intenções de um mesmo fiel. Clique em <strong>"Quitar Pagamento"</strong> para confirmar o recebimento em conjunto:
+                </p>
+                <div class="list-group">
+                    {% for lote in lotes_pendentes %}
+                        <div class="list-group-item list-group-item-action d-flex flex-wrap justify-content-between align-items-center py-2 px-3 bg-white">
+                            <div>
+                                <strong class="text-primary me-2">Lote #{{ lote.id }}:</strong>
+                                <span class="fw-semibold text-dark">{{ lote.intencoes_pagas.count }} intenção(ões)</span>
+                                <span class="text-muted small ms-2">
+                                    ({% for it in lote.intencoes_pagas.all %}{{ it.nome_intencao }}{% if not forloop.last %}, {% endif %}{% endfor %})
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-1 mt-md-0">
+                                <span class="fw-bold text-success me-2">R$ {{ lote.valor_total|floatformat:2 }}</span>
+                                <a href="{% url 'pagamento_lote' missa.id lote.id %}" class="btn btn-sm btn-success fw-semibold shadow-sm">
+                                    <i class="bi bi-cash-coin me-1"></i> Quitar Pagamento
+                                </a>
+                                <a href="{% url 'excluir_lote_pendente' missa.id lote.id %}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Deseja realmente cancelar este lote pendente? Suas intenções serão excluídas.');"
+                                   title="Descartar lote">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- SEÇÃO 1: INTENÇÕES ORGANIZADAS POR CATEGORIA (DROPDOWNS / ABAS) -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-collection-fill text-primary me-2"></i>Intenções por Categoria Litúrgica
+                </h5>
+                <span class="text-muted small">
+                    Total: {{ total_intencoes }} intenção(ões) registrada(s)
+                    {% if missa.intencoes_pendentes_count > 0 %}
+                        &bull; <strong class="text-warning-emphasis">({{ missa.intencoes_pendentes_count }} pendente(s))</strong>
+                    {% endif %}
+                </span>
+            </div>
+
+            <!-- Botões para Expandir e Recolher Todos os Dropdowns -->
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary" onclick="alternarTodosAccordion(true)">
+                    <i class="bi bi-arrows-expand me-1"></i> Expandir Todas
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="alternarTodosAccordion(false)">
+                    <i class="bi bi-arrows-collapse me-1"></i> Recolher Todas
+                </button>
+            </div>
+        </div>
+
+        {% if total_intencoes > 0 %}
+            <!-- Accordion / Dropdowns com cada Categoria Litúrgica -->
+            <div class="accordion mb-4" id="accordionCategorias">
+                {% for cat in intencoes_por_categoria %}
+                <div class="accordion-item mb-2 border rounded shadow-sm overflow-hidden">
+                    <h2 class="accordion-header" id="heading-{{ cat.chave }}">
+                        <button class="accordion-button {% if cat.total == 0 %}collapsed bg-light text-muted{% else %}bg-white text-dark{% endif %} fw-semibold py-3"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#collapse-{{ cat.chave }}"
+                                aria-expanded="{% if cat.total > 0 %}true{% else %}false{% endif %}"
+                                aria-controls="collapse-{{ cat.chave }}">
+                            <div class="d-flex align-items-center justify-content-between w-100 pe-3">
+                                <div>
+                                    <i class="bi {{ cat.icone }} me-2 text-primary fs-5 align-middle"></i>
+                                    <span class="align-middle fs-6">{{ cat.nome }}</span>
+                                </div>
+                                <div>
+                                    {% if cat.total > 0 %}
+                                        <span class="badge bg-primary rounded-pill px-3 py-2 fs-7">
+                                            {{ cat.total }} intenção(ões)
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1 fs-7">
+                                            0
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse-{{ cat.chave }}"
+                         class="accordion-collapse collapse {% if cat.total > 0 %}show{% endif %}"
+                         aria-labelledby="heading-{{ cat.chave }}">
+                        <div class="accordion-body p-0">
+                            {% if cat.total > 0 %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light border-top">
+                                            <tr>
+                                                <th style="width: 50px;" class="ps-3">#</th>
+                                                <th>Nome / Intenção</th>
+                                                <th>Tipo</th>
+                                                <th>Pagamento</th>
+                                                {% if not missa.esta_bloqueada %}
+                                                    <th style="width: 130px;" class="text-center pe-3">Ações</th>
+                                                {% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in cat.itens %}
+                                            <tr>
+                                                <td class="text-muted ps-3">{{ forloop.counter }}</td>
+                                                <td class="fw-semibold text-dark fs-6">{{ item.nome_intencao }}</td>
+                                                <td>
+                                                    <span class="badge badge-categoria {{ cat.badge_classe }}">
+                                                        {{ item.get_tipo_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {% if item.pagamento and item.pagamento.status == 'pago' %}
+                                                        {% if item.pagamento.forma == 'secretaria' %}
+                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary">
+                                                                <i class="bi bi-file-earmark-check me-1"></i>Secretaria (Docx)
+                                                            </span>
+                                                        {% elif item.pagamento.forma == 'pix' %}
+                                                            <span class="badge bg-info-subtle text-info-emphasis border border-info">
+                                                                <i class="bi bi-qr-code me-1"></i>Pix ({{ item.pagamento.nome_pix|truncatechars:18 }})
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge bg-success-subtle text-success border border-success">
+                                                                <i class="bi bi-cash me-1"></i>Dinheiro
+                                                            </span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <div class="d-inline-flex align-items-center gap-1">
+                                                            <span class="badge bg-warning text-dark border border-warning">
+                                                                <i class="bi bi-clock-history me-1"></i>Pendente
+                                                            </span>
+                                                            {% if item.pagamento %}
+                                                                <a href="{% url 'pagamento_lote' missa.id item.pagamento.id %}"
+                                                                   class="btn btn-sm btn-outline-warning text-dark fw-bold py-0 px-2"
+                                                                   title="Quitar todo este lote">
+                                                                    <i class="bi bi-cash-coin me-1"></i>Pagar Lote #{{ item.pagamento.id }}
+                                                                </a>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endif %}
+                                                </td>
+                                                {% if not missa.esta_bloqueada %}
+                                                    <td class="text-center pe-3">
+                                                        <div class="btn-group btn-group-sm">
+                                                            <a href="{% url 'editar_intencao' item.id %}" class="btn btn-outline-secondary" title="Editar intenção">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                            <a href="{% url 'excluir_intencao' item.id %}" class="btn btn-outline-danger" title="Excluir intenção">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="p-3 text-center text-muted small bg-light">
+                                    <i class="bi bi-inbox me-1"></i> Nenhuma intenção marcada nesta categoria.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Estado quando a missa não tem nenhuma intenção -->
+            <div class="alert alert-light border text-center py-5 mb-4">
+                <i class="bi bi-journal-x fs-1 text-muted d-block mb-2"></i>
+                <h5 class="fw-bold">Nenhuma intenção marcada nesta missa ainda.</h5>
+                {% if not missa.esta_bloqueada %}
+                    <p class="text-muted mb-3">Clique no botão abaixo para começar a marcar para os fiéis.</p>
+                    <a href="{% url 'cadastrar_intencao' missa.id %}" class="btn btn-success">
+                        <i class="bi bi-person-plus-fill me-1"></i> Marcar Primeira Intenção
+                    </a>
+                {% else %}
+                    <p class="text-muted mb-0">Esta celebração encerrou sem intenções registradas.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- SEÇÃO 2: RESUMO FINANCEIRO (CONTROLE DO CAIXA DA SESSÃO AO VIVO) -->
+        <div class="border-top pt-4 mt-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-wallet2 text-success me-2"></i>Controle do Caixa da Sessão (Balcão)
+                    </h5>
+                    <span class="text-muted small">Valores recebidos exclusivamente durante o plantão desta missa</span>
+                </div>
+                <a href="{% url 'caixa_missa' missa.id %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-receipt me-1"></i> Ver Extrato Detalhado do Caixa →
+                </a>
+            </div>
+
+            <!-- Grid de Métricas: 5 Quadrados com Totais da Sessão e Doações em Quadrado Exclusivo -->
+            <div class="row g-3 mb-3">
+                <!-- 1. Intenções Pagas na Sessão -->
+                <div class="col-6 col-md-4 col-lg">
+                    <div class="p-3 bg-light rounded text-center border h-100">
+                        <span class="text-muted small d-block mb-1">
+                            <i class="bi bi-person-check text-primary me-1"></i>Intenções da Sessão
+                        </span>
+                        <strong class="fs-4 text-primary">{{ missa.intencoes_sessao_count }}</strong>
+                    </div>
+                </div>
+
+                <!-- 2. Total Arrecadado na Sessão -->
+                <div class="col-6 col-md-4 col-lg">
+                    <div class="p-3 bg-light rounded text-center border h-100">
+                        <span class="text-muted small d-block mb-1">
+                            <i class="bi bi-cash-stack text-success me-1"></i>Total da Sessão
+                        </span>
+                        <strong class="fs-4 text-success">R$ {{ missa.total_sessao|floatformat:2 }}</strong>
+                    </div>
+                </div>
+
+                <!-- 3. Em Dinheiro -->
+                <div class="col-6 col-md-4 col-lg">
+                    <div class="p-3 bg-light rounded text-center border h-100">
+                        <span class="text-muted small d-block mb-1">
+                            <i class="bi bi-cash me-1 text-primary"></i>Dinheiro em Caixa
+                        </span>
+                        <strong class="fs-4 text-primary">R$ {{ missa.total_dinheiro|floatformat:2 }}</strong>
+                    </div>
+                </div>
+
+                <!-- 4. Em Pix (Exclusivo Pix) -->
+                <div class="col-6 col-md-4 col-lg">
+                    <div class="p-3 bg-light rounded text-center border h-100">
+                        <span class="text-muted small d-block mb-1">
+                            <i class="bi bi-qr-code text-info me-1"></i>Pix da Sessão
+                        </span>
+                        <strong class="fs-4 text-info">R$ {{ missa.total_pix|floatformat:2 }}</strong>
+                    </div>
+                </div>
+
+                <!-- 5. Doações do Troco (QUADRADO EXCLUSIVO DEDICADO) -->
+                <div class="col-12 col-md-4 col-lg">
+                    <div class="p-3 bg-warning-subtle rounded text-center border border-warning h-100">
+                        <span class="text-dark small d-block mb-1 fw-semibold">
+                            <i class="bi bi-heart-fill text-danger me-1"></i>Doações do Troco
+                        </span>
+                        <strong class="fs-4 text-dark">R$ {{ missa.total_doacao|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Painel Separado para Intenções da Secretaria (Lote Importado) -->
+            {% if missa.intencoes_secretaria_count > 0 %}
+                <div class="p-3 bg-secondary-subtle rounded border border-secondary d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <strong class="text-secondary-emphasis d-block">
+                            <i class="bi bi-file-earmark-check me-1"></i>Lote Prévio da Secretaria (DOCX):
+                        </strong>
+                        <span class="small text-muted">
+                            {{ missa.intencoes_secretaria_count }} intenção(ões) já arrecadada(s) anteriormente na secretaria (R$ {{ missa.total_secretaria|floatformat:2 }}).
+                        </span>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-secondary px-3 py-2 fs-6">
+                            Total Geral da Celebração: {{ missa.intencoes.count }} intenções &bull; R$ {{ missa.total_arrecadado|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function alternarTodosAccordion(expandir) {
+        const accordionItems = document.querySelectorAll('#accordionCategorias .accordion-collapse');
+        accordionItems.forEach(el => {
+            const bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+            if (expandir) {
+                bsCollapse.show();
+            } else {
+                bsCollapse.hide();
+            }
+        });
+    }
+</script>
+{% endblock %}

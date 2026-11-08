@@ -3,17 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Intenções de Missa{% endblock %}</title>
+    <title>{% block title %}Intenções de Missa - Catedral Divino Espírito Santo{% endblock %}</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .transition-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .transition-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1) !important;
+        }
+        .badge-categoria {
+            font-size: 0.85rem;
+            padding: 6px 10px;
+            border-radius: 6px;
+        }
+        .btn-menu-hamburguer {
+            transition: background 0.2s;
+            border-radius: 8px;
+        }
+        .btn-menu-hamburguer:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
 </head>
-<body>
-    
-    {% block content %}
-    <!-- O conteúdo dos outros templates será inserido aqui -->
-    {% endblock %}
+<body class="d-flex flex-column min-vh-100">
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% if IS_TEST_MODE %}
+    <!-- Banner de Alerta de Modo de Teste -->
+    <div class="bg-warning text-dark py-2 px-3 text-center fw-bold border-bottom border-dark shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        <span>MODO DE TESTES / SIMULAÇÃO ATIVO</span>
+        <span class="badge bg-dark text-warning ms-2 font-monospace">{{ DB_NAME }}</span>
+        <span class="ms-2 small fw-normal d-none d-md-inline">&bull; As alterações feitas aqui NÃO afetam os dados oficiais da Catedral.</span>
+    </div>
+    {% endif %}
+
+    <!-- Navbar Superior Limpa com Botão de Menu Lateral à Esquerda -->
+    <nav class="navbar navbar-dark {% if IS_TEST_MODE %}bg-dark border-bottom border-warning border-3{% else %}bg-primary{% endif %} shadow-sm mb-4 py-2">
+        <div class="container d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <!-- Botão no Canto Superior Esquerdo que Abre o Menu Lateral -->
+                <button class="btn btn-menu-hamburguer text-white me-2 p-1"
+                        type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#menuLateral"
+                        aria-controls="menuLateral"
+                        title="Abrir Menu Principal">
+                    <i class="bi bi-list fs-2"></i>
+                </button>
+
+                <a class="navbar-brand d-flex align-items-center mb-0" href="{% url 'painel_missas' %}">
+                    <i class="bi bi-book-half me-2 fs-4"></i>
+                    <span>Intenções de Missa</span>
+                    {% if IS_TEST_MODE %}
+                    <span class="badge bg-warning text-dark ms-2 fw-bold">MODO DE TESTE</span>
+                    {% endif %}
+                </a>
+            </div>
+
+            <div class="d-none d-md-flex text-white-50 small align-items-center">
+                <i class="bi bi-geo-alt me-1"></i>
+                <span>Catedral do Divino Espírito Santo &bull; Divinópolis/MG</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Menu Lateral (Offcanvas à Esquerda) -->
+    <div class="offcanvas offcanvas-start shadow" tabindex="-1" id="menuLateral" aria-labelledby="menuLateralLabel" style="max-width: 320px;">
+        <div class="offcanvas-header bg-primary text-white py-3">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-book-half fs-3 me-2"></i>
+                <div>
+                    <h5 class="offcanvas-title fw-bold mb-0" id="menuLateralLabel">Intenções de Missa</h5>
+                    <small class="text-white-50">Catedral Divino Espírito Santo</small>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+        </div>
+
+        <div class="offcanvas-body d-flex flex-column p-0">
+            <!-- Informação da Paróquia -->
+            <div class="p-3 bg-light border-bottom">
+                <div class="small fw-semibold text-secondary text-uppercase mb-1">Navegação do Sistema</div>
+                <div class="small text-muted">Acesse as funções de marcação e importação litúrgica:</div>
+            </div>
+
+            <!-- Links de Navegação Lateral -->
+            <div class="list-group list-group-flush py-2">
+                <a href="{% url 'painel_missas' %}" class="list-group-item list-group-item-action d-flex align-items-center py-3 border-0">
+                    <i class="bi bi-grid-3x3-gap-fill text-primary fs-4 me-3"></i>
+                    <div>
+                        <strong class="d-block text-dark">Painel de Missas</strong>
+                        <small class="text-muted">Ver todas as celebrações e horários</small>
+                    </div>
+                </a>
+
+                <a href="{% url 'criar_missa' %}" class="list-group-item list-group-item-action d-flex align-items-center py-3 border-0">
+                    <i class="bi bi-calendar-plus text-success fs-4 me-3"></i>
+                    <div>
+                        <strong class="d-block text-dark">+ Nova Missa</strong>
+                        <small class="text-muted">Cadastrar data e horário de celebração</small>
+                    </div>
+                </a>
+
+                <a href="{% url 'importar_docx_geral' %}" class="list-group-item list-group-item-action d-flex align-items-center py-3 border-0">
+                    <i class="bi bi-file-earmark-arrow-up text-info fs-4 me-3"></i>
+                    <div>
+                        <strong class="d-block text-dark">Importar DOCX</strong>
+                        <small class="text-muted">Carregar arquivo Word da secretaria</small>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Rodapé do Menu Lateral -->
+            <div class="mt-auto p-3 bg-light border-top text-center text-muted small">
+                <div class="fw-semibold">Diocese de Divinópolis / MG</div>
+                <div class="text-secondary opacity-75">Sistema Paroquial de Intenções</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensagens / Alertas do Django -->
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+                    {% if message.tags == 'success' %}
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        <i class="bi bi-x-circle-fill me-2"></i>
+                    {% else %}
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="bg-white border-top py-3 mt-5 text-center text-muted small">
+        <div class="container">
+            Catedral do Divino Espírito Santo &bull; Diocese de Divinópolis/MG
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

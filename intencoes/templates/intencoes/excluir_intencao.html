@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Intenção - Catedral Divino Espírito Santo{% endblock %}
+
+{% block content %}
+<div class="container pb-5" style="max-width: 540px;">
+    <div class="mb-3">
+        <a href="{% url 'detalhes_missa' missa.id %}" class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para a missa
+        </a>
+    </div>
+
+    <div class="card card-custom p-4 bg-white border-top border-4 border-danger">
+        <div class="text-center mb-4">
+            <i class="bi bi-exclamation-triangle-fill fs-1 text-danger mb-2 d-inline-block"></i>
+            <h3 class="fw-bold mb-1">Confirmar Exclusão</h3>
+            <p class="text-muted small">Tem certeza de que deseja remover esta intenção da celebração?</p>
+        </div>
+
+        <div class="alert alert-light border p-3 mb-4">
+            <div class="text-muted small">Intenção selecionada:</div>
+            <strong class="fs-5 text-dark d-block">{{ intencao.nome_intencao }}</strong>
+            <span class="badge bg-secondary mt-1">{{ intencao.get_tipo_display }}</span>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-danger btn-lg shadow-sm">
+                    <i class="bi bi-trash-fill me-1"></i> Sim, Excluir Intenção
+                </button>
+                <a href="{% url 'detalhes_missa' missa.id %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
